@@ -1,6 +1,7 @@
  // Module to perform new user experience for AQView
  // Assumed that "global map" has been defined and Community URL has been selected. 
  // Handles drag and drop of *properly formatted* CSV file
+ // THIS ONE!!! Works with Chrome, Firefox, Edge but not Safari!
    
   function fetchSessionsData(m_device, communityUrl, startDate , endDate ) {
     // If startDate and endDate are provided, append them to the URL
@@ -42,6 +43,7 @@ function parseAndDisplayCSVData(m_device, csvText) {
             	sessionId = 100;
             	isLegacy = 1;
             }
+            
             var  description = row['field5']; // description
             if (description.includes('no name')) { // check for legacy "trackname"
             	description = m_device; // default to backpaq name
@@ -275,7 +277,8 @@ function parseAndDisplayCSVData(m_device, csvText) {
             position: { lat: location.lat, lng: location.lng },
            
             // Use 'iconURL' to reference the icon URL
-            icon:  getPMColor(location.pm25), // set circle markers	
+           // icon:  getPMColor(location.pm25), // set circle markers	
+             icon:  getPMColor(location.pm25, location.comments), // set circle markers + special color if comment attached
 					
             title: "PM2.5: " + location.pm25 + unitsPM + ", CO2: " + location.co2 + "ppm, Comments: " + location.comments,
            // label: xxx,
