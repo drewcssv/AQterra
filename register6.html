@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>AQView Sensor Registration</title>
+  <link href="../content/bootstrap.css" rel="stylesheet" />
+  <script src="../js/excellentexport.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+ 
+  <script src="../js/jquery-1.11.0.min.js"></script>
+  <script src="../js/bootstrap.min.js"></script>
+</head>
+<body>
+<style>
+  
+  body {
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: white;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+#map {
+    bottom: 90%;
+    left: 60%;
+    height: 60%;
+    width: 30%;
+}
+</style>
+  
+  <div class="container">
+    <div id="sensorFile">
+    <b>Sensor Community:</b>
+    <select id="mySelect" title="Select your school or class: ">   
+        <option value="" selected>--Please select your Community--</option>                 
+    </select>
+    <button id="confirmSelection">Confirm</button>
+  </div>
+  
+    <div class="row">
+      <div class="col-sm-6">
+        <h2>AQView:  Register or Edit sensor information</h2>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-6">
+        <table id="productTable" 
+               class="table table-bordered table-condensed table-striped">
+          <thead>
+            <tr>
+              <th>Edit</th>
+              <th>Sensor Name</th>
+              <th>Sensor Type</th>
+              <th>Sensor Location</th>
+              <th>Location - Latitude</th>
+              <th>Location - Longitude</th>
+              <th>ThingSpeak A Channel or Sensor Node</th>
+              <th>ThingSpeak A Read Key</th>
+              <th>ThingSpeak C Channel</th>
+              <th>ThingSpeak C Read Key</th>
+              <th>Delete</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-sm-6">
+        <div class="panel panel-primary">
+          <div class="panel-heading">
+            Sensor Information
+          </div>
+          <div class="panel-body">
+            <div class="form-group">
+              <label for="sensorname">
+                Sensor Name
+              </label>
+              <input type="text"
+                     class="form-control"
+                     value="BackpAQ H1"
+                     id="sensorname" />
+            </div>
+            <div class="form-group">
+              <label for="sensortype">
+                Sensor Type
+              </label>
+              <input type="text"
+                     class="form-control"
+                     value="BackpAQ"
+                     id="sensortype" />
+            </div>
+            <div class="form-group">
+              <label for="location">
+                Sensor Location
+              </label>
+              <input type="text"
+                     class="form-control"
+                     value="811 Smith Road Mill Valley"
+                     id="location" />
+           </div>
+            <div class="form-group">
+              <label for="latitude">
+                Sensor Position (Latitude)
+              </label>
+              <input type="text"
+                     class="form-control"
+                     value= "adjust in map >"
+                     id="latitude" />
+           </div>
+            <div class="form-group">
+              <label for="longitude">
+                Sensor Position (Longitude)
+              </label>
+              <input type="text"
+                     class="form-control"
+                     value="adjust in map >"
+                     id="longitude" />
+            </div>
+            <div class="form-group">
+              <label for="channelA">ThingSpeak A Channel or Sensor ID</label>
+              <input type="text"
+                     class="form-control"
+                     value="1015678"
+                     id="channelA" />
+           </div>
+            <div class="form-group">
+              <label for="readkeyA">ThingSpeak A Read Key</label>
+              <input type="text"
+                     class="form-control"
+                     value="fggtttgk995mfjddd4y"
+                     id="readkeyA" />
+            </div>
+          </div>
+           <div class="form-group">
+              <label for="channelC">ThingSpeak C Channel</label>
+              <input type="text"
+                     class="form-control"
+                     value="1015678"
+                     id="channelC" />
+           </div>
+            <div class="form-group">
+              <label for="readkeyC">ThingSpeak C Read Key</label>
+              <input type="text"
+                     class="form-control"
+                     value="fggtttgk995mfjddd4y"
+                     id="readkeyC" />
+            </div>
+          </div>
+          <div class="panel-footer">
+            <div class="row">
+              <div class="col-xs-12">
+                <button type="button" id="updateButton"
+                        class="btn btn-primary"
+                        onclick="productUpdate();">
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+     	 <a download="AQView-sensors.csv" href="#" onclick="return ExcellentExport.csv(this, 'productTable');">Save CSV</a>
+  </div> 
+  <input id="pac-input" class="controls" type="text" placeholder="Search Box">
+  <div id="map"
+  
+             
+  </div>
+  <h6>&nbsp&nbsp&nbsp&nbsp Drag marker to adjust sensor position</h4>
+ 
+  <script>
+    // Next id for adding a new Product
+    var nextId = 1;
+    // ID of Product currently editing
+    var activeId = 0;
+    var latitude_value = "37.456";
+     var longitude_value = "-122.456";
+    var markers = [];
+    var channelKeys = [];
+    var pos; var myPos;
+    var map;
+    var newLat = "adjust in map >";
+    var newLng = "adjust in map >";
+    var data;
+	var sensorURL = "/csv/AQView-sensors-test.csv"; // default sensor list
+				
+  // Call the function to populate the select box
+    populateSelectBox();
+/*    
+	$.ajax({
+ url: "https://drewcssv.github.io/ssvaq/testdata1.csv",
+ //  url: "../Downloads/AQView-sensors.csv",
+  type: "GET",  
+  dataType: 'text',
+  }).done(getCSVConfig);  */
+  
+   // Function to populate the selection box
+    async function populateSelectBox() {
+        const selectBox = document.getElementById('mySelect');
+        
+        try {
+            // Fetch options from the JSON file
+            const response = await fetch('https://www.backpaqlabs.com/csv/CommunityOptions.json'); // sensor community file in /csv
+            const options = await response.json();
+            
+            // Populate the select box with options
+            options.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.label;
+                selectBox.appendChild(opt);
+            });
+        } catch (error) {
+            console.error('Error fetching or parsing options:', error);
+        }
+    }
+    
+    
+    function productDisplay(ctl) {
+      var row = $(ctl).parents("tr");
+      var cols = row.children("td");
+
+      activeId = $($(cols[0]).children("button")[0]).data("id");
+      $("#sensorname").val($(cols[1]).text());
+      $("#sensortype").val($(cols[2]).text());
+      $("#location").val($(cols[3]).text());
+      $("#latitude").val($(cols[4]).text());
+      $("#longitude").val($(cols[5]).text());
+      $("#channelA").val($(cols[6]).text());
+      $("#readkeyA").val($(cols[7]).text());
+      $("#channelC").val($(cols[8]).text());
+      $("#readkeyC").val($(cols[9]).text());
+
+      // Change Update Button Text
+      $("#updateButton").text("Update");
+    }
+
+    function productUpdate() {
+      if ($("#updateButton").text() == "Update") {
+        productUpdateInTable(activeId);
+      }
+      else {
+        productAddToTable();
+      }
+
+      // Clear form fields
+      formClear();
+
+      // Focus to product name field
+      $("#sensorname").focus();
+    }
+
+    // Add product to <table>
+    function productAddToTable() {
+      // First check if a <tbody> tag exists, add one if not
+      if ($("#productTable tbody").length == 0) {
+        $("#productTable").append("<tbody></tbody>");
+      }
+
+      // Append product to table
+      $("#productTable tbody").append(
+        productBuildTableRow(nextId));
+
+      // Increment next ID to use
+      nextId += 1;
+    }
+
+    // Update product in <table>
+    function productUpdateInTable(id) {
+      // Find Product in <table>
+      var row = $("#productTable button[data-id='" + id + "']")
+                .parents("tr")[0];
+
+      // Add changed product to table
+      $(row).after(productBuildTableRow(id));
+      // Remove original product
+      $(row).remove();
+
+      // Clear form fields
+      formClear();
+
+      // Change Update Button Text
+      $("#updateButton").text("Add");
+    }
+
+    // Build a <table> row of Product data
+    function productBuildTableRow(id) {
+   
+      
+      var ret =
+      "<tr>" +
+        "<td>" +
+          "<button type='button' " +
+                  "onclick='productDisplay(this);' " +
+                  "class='btn btn-default' " +
+                  "data-id='" + id + "'>" +
+                  "<span class='glyphicon glyphicon-edit' />" +
+          "</button>" +
+        "</td>" +
+        "<td>" + $("#sensorname").val() + "</td>" +
+        "<td>" + $("#sensortype").val() + "</td>" +
+        "<td>" + $("#location").val() + "</td>" +
+        "<td>" + $("#latitude").val() + "</td>" +
+        "<td>" + $("#longitude").val() + "</td>" +
+        "<td>" + $("#channelA").val() + "</td>" +
+        "<td>" + $("#readkeyA").val() + "</td>" +
+        "<td>" + $("#channelC").val() + "</td>" +
+        "<td>" + $("#readkeyC").val() + "</td>" +
+        "<td>" +
+          "<button type='button' " +
+                  "onclick='productDelete(this);' " +
+                  "class='btn btn-default' " +
+                  "data-id='" + id + "'>" +
+                  "<span class='glyphicon glyphicon-remove' />" +
+          "</button>" +
+        "</td>" +
+      "</tr>"
+
+      return ret;
+    }
+
+    // Delete product from <table>
+    function productDelete(ctl) {
+      $(ctl).parents("tr").remove();
+    }
+
+    // Clear form fields
+    function formClear() {
+      $("#sensorname").val("");
+      $("#sensortype").val("");
+      $("#location").val("");
+      $("#latitude").val("");
+      $("#longitude").val("");
+      $("#channelA").val("");
+      $("#readkeyA").val("");
+      $("#channelC").val("");
+      $("#readkeyC").val("");
+    }
+ function selectCommunity() {
+  var x = document.getElementById("mySelect").selectedIndex;
+  //alert(document.getElementsByTagName("option")[x].value);
+  sensorURL = document.getElementsByTagName("option")[x].value;
+  getCSVConfig(); // read in CSV that contains sensor, marker and Thingspeak config
+  //alert("Community: " + sensorURL);
+}   
+// Read CSV file to fetch sensor, Thingspeak channel, API key, etc.
+function getCSVConfig() {  
+//var url = "https://drewcssv.github.io/ssvaq/todo.csv"; // CSV file containing sensors, markets, locations, etc.
+//var url = "https://drewcssv.github.io/ssvaq/testdata2.csv"; // CSV file containing sensors, markets, locations, etc.
+//  var url = "https://drewcssv.github.io/ssvaq/AQView-sensors.csv"; // CSV file containing sensors, markets, locations, etc.
+var url = sensorURL; // CSV file containing sensors, markets, locations, etc.
+
+var request = new XMLHttpRequest();  
+request.open("GET", url, false);   
+request.send(null);  
+
+// get data for sensor from saved CSV file
+var jsonObject = request.responseText.split(/\r?\n|\r/);
+//console.log("len: " + jsonObject.length);
+for (var i =1; i < jsonObject.length-1; i++) {
+  markers.push(jsonObject[i].split(','));
+//console.log("markers: " + markers)  
+}
+
+// pre-populate table with value from saved CSV file
+    for (i =0; i < markers.length; i++) { // loop through rows
+   // console.log("name: " + markers[1][1]);
+   // console.log("name: " + channelName + ", type: " + channelType + ", location: " + channelLoc + ", channel: " + channelNum + ", key: " + channelKey); 
+    // Edit,Sensor Name,Sensor Type,Location,Latitude,Longitude,Channel,Read Key,Delete
+   // 0     1            2          3       4       5        6       /    
+      document.getElementById('sensorname').value = markers[i][1];
+      document.getElementById('sensortype').value = markers[i][2];
+      document.getElementById('location').value =markers[i][3];
+      document.getElementById('latitude').value = markers[i][4];
+      document.getElementById('longitude').value = markers[i][5];
+      document.getElementById('channelA').value = markers[i][6];
+      document.getElementById('readkeyA').value = markers[i][7];
+      document.getElementById('channelC').value = markers[i][8];
+      document.getElementById('readkeyC').value = markers[i][9];
+       
+       productAddToTable(); // add row to table
+    }
+}
+
+jQuery(function($) {
+   // Asynchronously Load the map API
+     var script = document.createElement('script');
+     script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyC9cwbKnz2iZqFWazHkaqyigA40tSK3s5g&libraries=visualization,places&callback=initialize";
+     document.body.appendChild(script);
+     
+    });
+
+ function initialize(nextId) {
+    
+    map = new google.maps.Map(document.getElementById('map'), {
+    center: {lat: 37.897, lng: -122.544},
+    zoom: 14
+});
+
+ var searchBox = new google.maps.places.SearchBox(document.getElementById('pac-input'));
+   map.controls[google.maps.ControlPosition.TOP_CENTER].push(document.getElementById('pac-input'));
+   google.maps.event.addListener(searchBox, 'places_changed', function() {
+     searchBox.set('map', null);
+
+
+     var places = searchBox.getPlaces();
+
+     var bounds = new google.maps.LatLngBounds();
+     var i, place;
+     for (i = 0; place = places[i]; i++) {
+       (function(place) {
+         var marker = new google.maps.Marker({
+
+           position: place.geometry.location,
+           draggable: true
+         });
+         marker.bindTo('map', searchBox, 'map');
+         google.maps.event.addListener(marker, 'map_changed', function() {
+           if (!this.getMap()) {
+             this.unbindAll();
+           }
+           
+           newLat = marker.getPosition().lat().toFixed(4);
+           newLng = marker.getPosition().lng().toFixed(4);
+        
+          // update sensor positon   
+           document.getElementById('latitude').value = newLat;
+           document.getElementById('longitude').value = newLng;
+         
+           productUpdateInTable(Id); // update sensor position in table   
+         });
+         
+         google.maps.event.addListener(marker, 'dragend', function(ev){ // set listener event for marker drag
+      
+        var newPos = marker.getPosition(); // fetch new position
+      
+       //   document.getElementById("myPos").innerHTML = newPos; // store new position
+        newLat = marker.getPosition().lat().toFixed(4);
+        newLng = marker.getPosition().lng().toFixed(4);
+        
+        // update sensor positon   
+           document.getElementById('latitude').value = newLat;
+           document.getElementById('longitude').value = newLng;
+         
+           productUpdateInTable(Id); // update sensor position in table   
+       });
+ 
+         bounds.extend(place.geometry.location);
+
+
+       }(place));
+
+     }; // for
+     
+     map.fitBounds(bounds);
+     searchBox.set('map', map);
+     map.setZoom(Math.min(map.getZoom(),12));
+     
+     
+
+
+}); // event 
+
+
+ 
+ 
+function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+    infoWindow.setPosition(pos);
+    infoWindow.setContent(browserHasGeolocation ?
+                          'Error: The Geolocation service failed.' :
+                          'Error: Your browser doesn\'t support geolocation.');
+}
+ }// init
+ 
+
+  </script>
+
+</body>
+</html>
