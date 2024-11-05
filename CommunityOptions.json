@@ -1,0 +1,30 @@
+// This file contains Community Sensor information for "Choose Community" selection list. JSON format is: { "value" : "Link to sensor file" , "label" : "Community Name" }
+// Sensor file is CSV format and contains a list of the sensors in that Community. Files are generated using the "Register4" tool in AQView. Format is:
+// "Sensor Name, Sensor Type, Sensor Location,	Location - Latitude, Location - Longitude, ThingSpeak A Channel or Sensor Node, ThingSpeak A Read Key,	ThingSpeak C Channel, ThingSpeak C Read Key"
+// Sensor data is stored in ThingSpeak using 3 Channels: "Data 1" for PM, Temp, Humidity, CO2; "Data2" for PM particles sizes; "Data 3" for PM, CO2 and GPS track data
+
+[
+               
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-andrewhill_ali.csv", "label": "Andrew Hill HS Ali"},
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-andrewhill_alm.csv", "label": "Andrew Hill HS Almada"},
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-avenues-kit2.csv", "label": "Avenues School"},
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-calero.csv", "label": "Calero HS"},
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-evergreen.csv", "label": "Evergreen Valley HS"},
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-Independence-kit3.csv", "label": "Independence HS"},
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-jlick.csv", "label": "James Lick HS" },
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-mtpleas1.csv", "label": "Mt Pleasant HS Ottum"},
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-mtpleas2.csv", "label": "Mt Pleasant HS Carey" },
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-oakgrove-kit2.csv", "label": "Oak Grove HS" },
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-overfelt.csv", "label": "Overfelt HS" },
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-piedmont.csv", "label": "Piedmont Hills HS" },
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-Piedmont-kits.csv", "label": "Piedmont Hills HS Kits" },
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-silvercreek.csv", "label": "Silver Creek HS" },
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-yerba.csv", "label": "Yerba Buena HS" },           
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-Fall23Workshop.csv", "label": "YAQA Fall '23 Workshop" },
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-workshop.csv", "label": "YAQA Spring '23 Workshop" },
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-smartTA.csv", "label": "SmartTA" },
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-colo.csv", "label": "CoLo" },
+                     { "value" : "https://www.backpaqlabs.com/csv/AQView-sensors-CARB.csv", "label": "CARB" }
+    
+]
+

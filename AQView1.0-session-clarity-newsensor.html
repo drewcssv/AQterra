@@ -1,0 +1,3915 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>SSV "AQView" Air Quality Sensor Network Monitor V2.01 (c) 2021 2022 2023 2024 BackpAQ Labs/SSV Labs</title>
+	<meta charset="utf-8">
+	<link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+	<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+
+	<meta name="author" content="Andrew Clark">
+	<link rel="stylesheet" href="../content/pikaday.css">
+	<link rel="stylesheet" href="../content/site.css">
+
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+	<style>
+		/* SSV AQView - Community Air Quality Monitor
+       * (c) 2023, 2024 SSV and BackpAQ Labs */
+
+		body {
+			padding-top: 20vh;
+			font-family: 'Open Sans', sans-serif;
+			text-align: center;
+			background-color: #fafafa;
+		}
+
+		h1 {
+			margin-bottom: 20px;
+		}
+		
+		img {
+          max-width: 100%;
+          height: auto;
+         }
+
+     .container {
+      width: 100%; /* Use a percentage width */
+      max-width: 1200px; /* Maximum width */
+      margin: 0 auto; /* Centering */
+      }
+
+		#loading {
+			position: fixed;
+			display: block;
+			width: 100%;
+			height: 100%;
+			top: 500px;
+			left: 500px;
+			text-align: center;
+			opacity: 0.3;
+			background-color: #fff;
+			z-index: 99;
+		}
+
+		#loading-image {
+			position: absolute;
+			top: 500px;
+			left: 500px;
+			z-index: 100;
+		}
+
+		.overlay {
+			display: none;
+			position: fixed;
+			width: 100%;
+			height: 100%;
+			top: 0;
+			left: 0;
+			z-index: 999;
+			background: rgba(255, 255, 255, 0.5) url("https://www.backpaqlabs.com/images/Spinner-1s-200px.gif") center no-repeat;
+		}
+
+		.form-switch {
+			display: inline-block;
+			cursor: pointer;
+			-webkit-tap-highlight-color: transparent;
+		}
+
+		.form-switch i {
+			position: relative;
+			display: inline-block;
+			margin-right: .5rem;
+			width: 46px;
+			height: 26px;
+			background-color: #e6e6e6;
+			border-radius: 23px;
+			vertical-align: text-bottom;
+			transition: all 0.3s linear;
+		}
+
+		.form-switch i::before {
+			content: "";
+			position: absolute;
+			left: 0;
+			width: 42px;
+			height: 22px;
+			background-color: #fff;
+			border-radius: 11px;
+			transform: translate3d(2px, 2px, 0) scale3d(1, 1, 1);
+			transition: all 0.25s linear;
+		}
+
+		.form-switch i::after {
+			content: "";
+			position: absolute;
+			left: 0;
+			width: 22px;
+			height: 22px;
+			background-color: #fff;
+			border-radius: 11px;
+			box-shadow: 0 2px 2px rgba(0, 0, 0, 0.24);
+			transform: translate3d(2px, 2px, 0);
+			transition: all 0.2s ease-in-out;
+		}
+
+		.form-switch:active i::after {
+			width: 28px;
+			transform: translate3d(2px, 2px, 0);
+		}
+
+		.form-switch:active input:checked+i::after {
+			transform: translate3d(16px, 2px, 0);
+		}
+
+		.form-switch input {
+			display: none;
+		}
+
+		.form-switch input:checked+i {
+			background-color: #4BD763;
+		}
+
+		.form-switch input:checked+i::before {
+			transform: translate3d(18px, 2px, 0) scale3d(0, 0, 0);
+		}
+
+		.form-switch input:checked+i::after {
+			transform: translate3d(22px, 2px, 0);
+		}
+
+		#map_wrapper {
+			height: 100%;
+		}
+
+		#map_canvas {
+			width: 100%;
+			height: 100%;
+		}
+		
+		
+
+		/* Optional: Makes the sample page fill the window. */
+		html,
+		body {
+			height: 100%;
+			margin: 0;
+			padding: 0;
+		}
+		
+		#closer {
+          float:left;
+          display:inline-block;
+          padding:2px 5px;
+          background:#ccc;
+        }
+
+         #closer:hover {
+        float:left;
+        display:inline-block;
+        padding:2px 5px;
+        background:#ccc;
+        color:#fff;
+        }
+
+		#container {
+			height: 100%;
+			display: flex;
+		}
+
+		#sidebar {
+			flex-basis: 15rem;
+			flex-grow: 1;
+			padding: 1rem;
+			max-width: 30rem;
+			height: 100%;
+			box-sizing: border-box;
+			display: flex;	
+    	    background-color: #87CEEB;
+		}
+		hr {
+        position: relative;
+        top: 20px;
+        border: none;
+        height: 12px;
+        background: black;
+        margin-bottom: 50px;
+       }
+
+		#map {
+			flex-basis: 0;
+			flex-grow: 4;
+			height: 100%;
+		}
+
+		#popupbox {
+			margin: 0;
+			margin-left: 40%;
+			margin-right: 40%;
+			margin-top: 50px;
+			padding-top: 10px;
+			width: 20%;
+			height: 150px;
+			position: absolute;
+			background: #FBFBF0;
+			border: solid #000000 2px;
+			z-index: 9;
+			font-family: arial;
+			visibility: hidden;
+		}
+
+		#airnow {
+			position: absolute;
+			top: 60%;
+			left: 5%;
+		}
+
+		#floating-panel {
+			position: absolute;
+			top: 20px;
+			left: 17%;
+			z-index: 5;
+			background-color: #f7fcfe;
+			opacity: .8;
+			/*  background-color: #fff; */
+			padding: 5px;
+			border: 1px solid #999;
+			position: absolute;
+			text-align: center;
+			font-family: 'Roboto', 'sans-serif';
+			line-height: 25px;
+			padding-left: 10px;
+		}
+
+		#info-box {
+			position: absolute;
+			top: 75%;
+			left: 15%;
+			z-index: 5;
+			font-family: 'Roboto', 'sans-serif';
+			font-size: 12px;
+			background-color: white;
+			border: 1px solid blue;
+			border-radius: 10px;
+			height: 135px;
+			width: 250px;
+			padding: 10px;
+			left: 30px;
+			visibility: hidden;
+		}
+
+		#info_map {
+			border: 1px solid black;
+			background-color: white;
+
+			top: 455px;
+			left: 22%;
+			position: absolute;
+			height: 250px;
+			width: 790px;
+		}
+
+		#graph-container {
+			border: 1px solid black;
+			background-color: white;
+
+			top: 450px;
+			left: 22%;
+			position: absolute;
+			height: 400px;
+			width: 820px;
+			z-index: 1;
+		}
+
+		#graph2-container {
+			border: 1px solid black;
+			background-color: white;
+
+			top: 450px;
+			left: 22%;
+			position: absolute;
+			height: 400px;
+			width: 820px;
+			z-index: 1;
+		}
+
+		#chart-container {
+			border: 1px solid black;
+			top: 250px;
+			left: 5%;
+			position: absolute;
+			height: 600px;
+			width: 1000px;
+		}
+
+		#spl-container {
+			border: 1px solid black;
+			background-color: white;
+
+			top: 500px;
+			left: 22%;
+			position: absolute;
+			height: 400px;
+			width: 820px;
+			z-index: 1;
+		}
+
+		#below chart {
+			bottom: 15%;
+			left: 95%;
+			position: absolute;
+			height: 30px;
+			width: 30px;
+		}
+
+		html {
+			height: 100%;
+		}
+
+		#map {
+			height: 100%;
+		}
+
+		#map.over {
+			opacity: 0.5;
+			background-color: rgba(100, 100, 100, 0.5);
+		}
+
+		#sidebar {
+			flex-direction: column;
+			align-items: center;
+			justify-content: left;
+			columns: 2;
+			overflow: auto;
+		}
+
+		#getCSV {
+			width: 100%;
+			height: 50%;
+			right: 10%;
+
+		}
+		hr {
+                border: 0;
+                clear:both;
+                display:block;
+                width: 96%;                
+                background-color:#2196F3;
+                height: 1px;
+            }
+		
+
+
+            #line {
+                float: left;
+                width: 731px;
+                height: 40px;                
+            }
+
+		.file {
+			display: flex;
+			flex-flow: column;
+			margin-top: 1em;
+			cursor: move;
+			columns: 2;
+			text-align: center;
+		}
+
+		.file:hover .material-icons {
+			color: darkorange;
+		}
+
+		.file:hover .filename {
+			font-weight: bold;
+		}
+
+		.file .material-icons {
+			font-size: 30px;
+			color: orange;
+		}
+
+		.file .material-icons:hover {
+			color: darkorange;
+		}
+
+		.file .filename {
+			margin-top: 0.5em;
+			font-size: 10px;
+			color: #333333;
+		}
+
+		.myLoader {
+			width: 100%;
+			height: 500px;
+			background-color: blue;
+			opacity: 0.5
+		}
+
+.session-box {
+    cursor: pointer;
+    padding: 10px;
+    margin: 5px;
+    background-color: #ffffff;
+    display: inline-block;
+    border: 1px solid #ddd;
+    font-family: "PT Sans";
+    border-radius: 8px;
+    transition: border 0.3s ease, box-shadow 0.3s ease; /* Add transition for box-shadow */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for 3D effect */
+    text-align: left; /* Set text alignment to left */
+}
+
+.session-box:hover {
+    border: 3px solid #3498db; /* Example for hover state */
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2); /* Stronger shadow on hover */
+}
+        
+        
+  #session-container {
+    position: absolute;
+    bottom: 5px;
+    left: 20px; /* Start 20px from the left edge */
+    width: calc(85% - 40px); /* Adjust the width to account for the left starting point */
+    height: 120px; /* Set a fixed height */
+    overflow-x: auto; /* Enable horizontal scrolling */
+    overflow-y: hidden; /* Disable vertical scrolling */
+    white-space: nowrap; /* Prevents wrapping of child elements */
+    z-index: 100;   
+  }
+
+  #session-label {
+    position: absolute;
+    display: none;  /* Label is initially hidden */
+    bottom: 94px;  /* Adjust based on the height of your session container */
+    left: 26px;
+    width: calc(100% - 40px); /* Full width taking into account the padding */
+    color: #00008b; /* Text color */
+    font-size: 20px; /* Text size */
+    font-family: "PT Sans";
+    z-index: 100;
+    text-align: left; /* Align text to the left */
+  }
+        
+    .summaryTitle {
+        font-family: 'PT Sans', sans-serif;
+        font-size: 16px;
+        font-style: regular; 
+        font-weight: 400;
+    }
+    .descriptionText {
+        font-family: 'PT Sans', sans-serif;
+        font-size: 14px;
+        font-style: italic; 
+        font-weight: 400;
+    }
+    .communityText {
+        font-family: 'PT Sans', sans-serif;
+        font-size: 14px;
+        font-style: regular; 
+        font-weight: 400;
+    }
+    .dataRow {
+        font-family: 'PT Sans', sans-serif;
+        font-size: 12px;
+        font-style: regular; 
+        font-weight: 400;
+    }
+    .timeSpan {
+        font-family: 'PT Sans', sans-serif;
+        font-size: 14px;
+        font-style: regular; 
+        font-weight: 400;
+    }    
+       
+   #chart-area {
+    display: none; /* Enable flexbox layout */
+    flex-direction: row; /* Lay out children in a row */
+    justify-content: flex-start; /* Align children to the start */
+    align-items: stretch; /* Stretch children vertically to fill the container */
+    width: 70%; /* Set to 100% of its parent or adjust as needed */
+    height: 350px; /* Adjust based on your layout needs, ensuring it's tall enough for the chart */
+    padding: 10px;
+    background: white;
+    border: 2px solid #3498db;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    top: 300px;
+    left: 40px;
+    position: absolute; /* If you need absolute positioning, adjust accordingly */
+    overflow: hidden; /* Ensures no internal content spills out */
+   }
+
+   #summary-container {
+  /*  flex: 0 0 20%; /* Do not grow or shrink, set basis to 20% of the flex container's width */
+    padding: 10px;
+    
+    width: 200px;
+    position: absolute;
+    top: 7px;
+    left: 10px;
+    text-align: left; /* Set text alignment to left */
+   /* overflow: auto; /* Adds scrollbars if content overflows */
+   }
+
+   #chart-container2 {
+   /* flex: 1; /* Grow to fill the remaining space */
+    width: 850px;
+    height: 350px;
+    padding: 10px;
+    top: 5px;
+    left: 250px;
+    position: absolute;
+   }
+   #close-chart {
+            position: absolute;
+            right: 10px;
+            top: 9px;
+            cursor: pointer;
+            z-index: 300;
+    }
+  #search-container {
+            text-align: center;
+            margin-bottom: 20px;
+   }
+
+		/* Turn off scrollbar when body element has the loading class */
+		body.loading {
+			overflow: hidden;
+		}
+
+		/* Make spinner image visible when body element has the loading class */
+		body.loading .overlay {
+			display: block;
+		}
+
+
+		 .tooltip {
+          z-index: 2000;
+         }
+         
+         
+
+        .button {
+            position:fixed;top:5%;right:5%;padding:15px;background-color:#4c63c1;border:none;border-radius:25px;font-weight:500;font-size:14px;color:#fff;box-shadow:0px 0px 10px gray; z-index: 1000
+  
+         }
+         
+    #container.highlight {
+    outline: 2px dashed #3498db; /* Example highlight effect */
+    background-color: rgba(52, 152, 219, 0.2); /* Semi-transparent blue background */
+}
+
+		
+</style>
+
+
+	</script> <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+	
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.11.0/underscore-min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/geojson/0.5.0/geojson.min.js"></script>
+	<script src ="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment-with-locales.min.js" ></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data-1970-2030.js"></script>  
+      
+	<script src="https://code.highcharts.com/stock/highstock.js"></script>
+	<script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+	<script src="https://code.highcharts.com/highcharts-more.js"></script>
+	<script src="https://code.highcharts.com/modules/data.js"></script>
+	<script src="https://code.highcharts.com/modules/windbarb.js"></script>
+	<script src="https://code.highcharts.com/stock/modules/export-data.js"></script>
+	<script src="https://code.highcharts.com/stock/modules/drag-panes.js"></script>
+    <script src="https://code.highcharts.com/stock/indicators/indicators-all.js"></script>
+    
+    <script src="https://code.highcharts.com/modules/annotations-advanced.js"></script>
+    <script src="https://code.highcharts.com/modules/price-indicator.js"></script>
+    <script src="https://code.highcharts.com/modules/full-screen.js"></script>
+    <script src="https://code.highcharts.com/modules/stock-tools.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/heikinashi.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/hollowcandlestick.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+	<script src="https://code.highcharts.com/modules/stock-tools.js"></script>
+	
+	<script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?version=4.8.0"></script>
+	<script src="https://www.backpaqlabs.com/js/papaparse.min.js"></script>
+	<script src="https://www.backpaqlabs.com/js/MarkerClusterer.js"></script>
+	<script src="../js/canvasslider.js"></script>
+	<script src="../js/files.js"></script>
+
+	<link href="https://unpkg.com/material-components-web@6.0.0/dist/material-components-web.css" rel="stylesheet" />
+	<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+	<link rel="stylesheet" type="text/css" href="https://code.highcharts.com/css/stocktools/gui.css">
+    <link rel="stylesheet" type="text/css" href="https://code.highcharts.com/css/annotations/popup.css">
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" /> 
+     
+	<script src="https://www.backpaqlabs.com/js/datedropper-javascript.js"></script>
+	<script src="https://www.backpaqlabs.com/js/sessions-drag5.js"></script>
+	<script src="https://www.backpaqlabs.com/js/AQIColors.js"></script>
+	<script src="https://www.backpaqlabs.com/js/drawPoly.js"></script>
+	<script src="https://www.backpaqlabs.com/js/chartPackage.js"></script>
+	<script src="https://www.backpaqlabs.com/js/AQIFunctions.js"></script>
+	<script src="https://www.backpaqlabs.com/js/dragAndDropFunctions.js"></script>
+	<script src="https://www.backpaqlabs.com/js/googleAQI.js"></script>
+	<script src="https://www.backpaqlabs.com/js/synciFrame.js"></script>
+	<script src="https://www.backpaqlabs.com/js/fireLayer.js"></script>
+	<script src="https://www.backpaqlabs.com/js/displayBAAQMDData.js"></script>
+	
+	<script type="text/javascript">
+	
+		
+	// global constants
+		
+		const flightPlanCoords = new Array(); // array to hold track point data
+		const flightpath = new Array(); //array to hold polyline coords
+		const trackNames = []; // array to hold track names
+		const unitsPM = " µg/m³"; // units for all PM-related values
+		const unitsDB = "dB(A)";
+		const unitsNO2 = " µg/m³";  
+		
+   	// global variables   
+   	
+   	// Tracking variables 
+		
+		var  trackJSON = '';
+		var trackName1, trackNameCurrent;
+		var trackDataJSON = [];
+		var trackDataUser = "";
+		var	trackDataName = "";
+		var startTrackDate, endTrackDate ;
+		var heatMapData1 = []; // array to hold track data for heatmap	     
+		
+	// Sensor measurement variables	
+		
+		var pm25 = [0, 0, 0, 0, 0, 0, 0, 0, 0]; // Array to hold PM values
+		var NO2 = [];
+		var CO = [];
+		var O3 = [];
+		var CO2 = [];
+		var rHumid = [];	
+		
+		var pm1;
+		var pm25_nodata_time = [0, 0, 0, 0, 0, 0, 0, 0, 0]; // array to hold no data received values
+		var pmMaxTime = 30;
+		
+		var wndMaxTime = 30;
+		var wind = [0, 0, 0, 0, 0, 0, 0, 0];
+		var windDirection = [];
+		var windSpeed = [];
+		var vasMeasureOne = 0;
+		var vasMeasureTwo = 0;
+		var wind_nodata_time = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+		var windDataJSON = [];
+		
+		var noise = [];
+		var noiseDBA = [];
+		var noiseDBC = [];
+		var noiseDBZ = [];
+		var noiseSpectrumA = [];
+		var spectrumC = [];
+		var spectrumZ = [];
+		var noiseyA, noiseyC, noiseyZ;
+		
+		var airQualityIndex;
+		var aqiMess = ["", "", "", "", "", "", "", ""];
+		var AQI;
+		var kmlLayer;
+		var kmlLayerA;
+		var pmCorrection = "";
+		var pmAverage = "";
+		var geoURL;
+		var dynamicChart;
+		var channelsLoaded = 0;
+		
+		// Map and infoWindow globals
+		var map, heatmap, trafficLayer, pollutionLayer, flightPath;
+		var infowindow4, gLayer, infowindow5;
+		var infowindow7;
+		var refreshRate = 0;
+		var refreshHandle;
+		var doRefresh = false;
+		var liveDataString = "";
+		var chart_intervalID = 0;
+		var Layer;
+		
+		// Thingpeak-specific API call parms to fetch JSON data (PM2.5) 
+		var tsFields = '/fields/2/';
+		var tsFormat = 'last.json?api_key=';
+		var tsFeeds = '/feeds.json';
+		var tsFeeds1 = '/feeds.json?api_key=';
+		var tsFeeds2 = '/feeds.json?status=true&metadata=true&location=true&api_key=';
+		var j_endPhrase1 = '/fields/2/';
+		var j_endPhrase2 = 'last_data_age.json?api_key=';
+		var tsFields = '/fields/2/';
+		var tsFormat = 'last.json?api_key=';
+		var tsFeeds = '/feed.json?api_key=';
+		var apiKey = 'api_key=';
+		var start, end;
+		var metStartDate, metEndDate;
+		var tsAvg;
+		var userSelectedChannel;
+		var iChan = 6;
+		var iKey = 7;
+		var field22 = '/fields/2.json?results=2&api_key=';
+		var field33 = '/fields/3.json?results=2&api_key=';
+
+    // Container / UI Variables
+    
+		var bpUser, aqvUser;
+		var contentDiv = '<div id="info_map" style="height:250px; width:500px; display:inline"></div>';
+		var	tdwnl = "downloadTrackCSV();";	// CSV download track data
+		var	tdwnldd = "downloadTrackDDCSV();";	// CSV download track data
+		var whichContainer = "chart-container";
+		var allMarkers = [];
+		var cl_markers = [];
+		var markerCollection = [];
+		var sensorType = '';	
+		var bpDevice;
+		var bpChannel;
+		var bpKey;		
+		
+	// Global arrays
+		var saveTags = []; // array to save tags for each sensor
+		var channelKy, channelNumb;
+		var trackDevice = ["BP1-EPA", "BP2-EPA", "BP3-EPA", "BP4-EPA"];
+	
+		var trackChannel = [];
+		var trackKey = [];
+		var trackLocation = [];
+		var trackTags = [];
+		var trackLat = [];
+		var trackLon = [];
+		var points = [];
+		var dwnl = '';
+		var usp = '';
+		var chanID = [];
+		var chanKY = [];
+		var feedss = [];
+		var feeds1 = [],
+			feeds2 = [],
+			feeds3 = [],
+			times = [],
+			times2 = [];
+		var dirVal, speedval;
+		var wbData = [];
+		
+		var latInitial, lonInitial;
+		var latInitialArray = [];
+		var lonInitialArray = [];
+		var posInitialArray = [];
+		var markerUpdate;
+		
+		var pm25Measurements = [];
+		var no2Measurements = [];
+		var pm25Meas;
+		var no2Meas; 
+		var AQIMeas;
+		var formattedDate = '';
+
+		// CSV header for "markers": Name	Latitude	Longitude	Channel	PMfield	format	ReadAPI	Location	Type
+
+		var markers = []; // array to hold sensor and marker info
+		var BAQMarkers = []; // array to hold BAAQMD monitor location markers
+
+		var channelKeys = []; // array to hold plot data from Thingspeak
+		
+		var jsonSD; // json array to hold JSON parsed from SdCard CSV file
+
+
+		var BAQurl = "https://www.backpaqlabs.com/csv/BAAQMD3.csv"; // Hosted CSV file containing BAAQMD station info
+		
+		var activeFiresLayer;
+		
+		var sensorURL = "";
+		
+		// Globals for devices, communities
+		
+		var currentDeviceName; // current global backpaq device name
+		var currentDeviceName2;
+		var currentCommunity;
+		var newSensorURL;
+		var lastDataFromDevice;
+        
+		var tracksArray = []; // array to hold track names
+
+		var unitsTT = []; // array to hold units info for each field
+		
+		var dataC = "PM"; // default
+		var weight;
+		var rate;
+		
+		// globals from sessionsData
+		
+        let markers1 = [];
+		let parsedData;
+		const unitsCO2 = "ppm"; 
+		
+		let keepMarkers = false; // Default behavior is to not keep markers
+        let sessionMarkersMap = {}; // Maps session IDs to marker arrays
+        let currentPolyline = null; // Holds the current polyline
+        let activePolylines = []; // This array will hold all active polylines
+        let isLegacy = 0; // Legacy mode flag
+		
+		// ----------------------------------- end of global variables ---------------------------------------------------------------
+		
+		// login dialog  
+		  
+		function login(showhide) {
+
+			if (showhide == "show") {
+				document.getElementById('popupbox').style.visibility = "visible";
+
+			} else if (showhide == "hide") {
+				document.getElementById('popupbox').style.visibility = "hidden";
+			}
+		}
+		
+		// SelectCommunity kicks everything off...
+			
+		 function selectCommunity(sensorURL) {
+		 	
+		  console.log("Selected community: " + sensorURL);
+		  
+		  newSensorURL = sensorURL;
+		   
+          getCSVConfig(sensorURL); // load CSV file that contains sensor, marker and Thingspeak config   
+           
+          initialize(); // initialize and load Google map 
+        
+          if (sensorURL.includes("CARB")) {  } // HANDLE CLARITY SENSOR SPECIAL CASE
+		  else {
+          
+            getPreInputs(); // get device, channel # and pre-process. Set "last Data" variable
+          
+          }         
+         }        
+           
+         function selectDevice(deviceName) {
+         console.log("Selected device: " + deviceName);
+         var e = document.getElementById("deviceList");
+    
+            function onChange() {
+              var value = e.value;
+              var text = e.options[e.selectedIndex].text;
+              console.log(value, text);
+            }
+
+        // Trigger the onChange function immediately, even if the first option is selected
+        onChange();
+
+          // Attach the onchange event listener
+        e.onchange = onChange;
+       }
+          
+         
+      function showHide() { // toggle display of TrackView iframe
+           
+                // $("#container1").toggle();
+                    
+        var container = document.getElementById('container1');
+        if (container.style.display === 'none' || container.style.display === '') {
+           container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+            
+      }
+      
+  // Called from the tracks infobox, this function kicks off the whole new sessions sequence      
+  function startSessions(url) {
+	
+	 //Fetch session data and generate session boxes     
+        fetchSessionsData(url).then(sessions => {
+           addSessionBoxes(sessions);
+         }).catch(error => {
+           console.error('Error fetching session data:', error);
+        }); 
+         
+   }
+      // not currently used                        
+              
+		function getUserId() {
+
+			//fetch the form element by using forms object.
+			var formEl = document.forms.useridForm;
+			//Get the data from the form by using FormData objects.
+			var formData = new FormData(formEl);
+			//Get the value of the fields by the form data object.
+			aqvUser = formData.get('username');
+
+			alert("Welcome " + aqvUser + " !");
+
+			// do something here
+
+		}
+		
+		// Asynchronously Load the Googlemaps API
+		
+		jQuery(function($) {
+
+			var script = document.createElement('script');
+			script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyC9cwbKnz2iZqFWazHkaqyigA40tSK3s5g&libraries=visualization,drawing&callback=initialize";   
+			document.body.appendChild(script);
+			
+            //initialize();
+            
+             populateSelectCommunityBox();
+			
+			 document.getElementById("confirmSelection").addEventListener("click", function() {
+              var selectElement = document.getElementById("mySelect");
+              currentCommunity = selectElement.options[selectElement.selectedIndex].text;
+              var URL = selectElement.options[selectElement.selectedIndex].value;
+              console.log("Community is " + currentCommunity);    
+              selectCommunity(URL);
+             // currentCommunity = this.options[this.selectedIndex].text;
+              console.log("URL is " + URL);
+             
+            });
+
+		});
+		
+		// Function to populate the selection box
+       async function populateSelectCommunityBox() {
+        const selectBox = document.getElementById('mySelect');
+        
+        try {
+            // Fetch options from the JSON file
+            const response = await fetch('https://www.backpaqlabs.com/csv/CommunityOptions.json');
+            const options = await response.json();
+            
+            // Populate the select box with options
+            options.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.label;
+                selectBox.appendChild(opt);
+            });
+        } catch (error) {
+            console.error('Error fetching or parsing options:', error);
+        }
+    }
+
+				
+
+		// display info box with overall track file info
+		function drawInfoBox(geojson) {
+			
+			document.getElementById("info-box").style.display = "block";
+			document.getElementById('info-box').style.visibility = "visible";
+		
+			var trackNameCurrent = geojson.features[0].properties.TrackName.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, ''); // replace speci chars with blank
+			
+			console.log("in drawbox, current device is " + curentDeviceName);
+
+			var cont = '<div id="bodyContent" align="left" >' + "<b>" + "Track Name: " + "</b>" + trackNameCurrent + "<br>" +
+				//"<b>" + "User: " + "</b>" + geojson.features[0].properties.userid + "<br>" +
+				"<b>" + "User: " + "</b>" + currentDeviceName + "<br>" +
+				"<b>" + "Device: " + "</b>" + "BackpAQ3 with PM + CO2" + "<br><br>" +
+				"<b>" + "Date/Time: " + "</b>" + geojson.features[0].properties.created_at  +
+				"<br><br>" + "<button id=showch onclick=" + tdwnldd +">Export Track Data to CSV</button>" +
+			    '</div>';
+				
+			document.getElementById('info-box').innerHTML = cont; // insert content
+
+		}
+		
+		// load GeoJSON data onto Map
+		function loadGeoJsonString(geoString) {
+			try {
+				const geojson = JSON.parse(geoString);
+				
+				//console.log(geojson);
+
+				drawInfoBox(geojson); // load and display info box with track info
+
+				map.data.addGeoJson(geojson); // put geoJSON markers on map
+
+			} catch (e) {
+				alert("Not a GeoJSON file!");
+			}
+			zoom(map); // zoom map to proper depth     
+			drawPolyline(); // draw track path connecting markers   
+		}
+		
+		// load GeoJSON fire data onto Map
+		function loadGeoJsonFireString(geoString) {
+			try {
+				const geojson = JSON.parse(geoString);
+
+				drawInfoBox(geojson); // load and display info box with track info
+
+				map.data.addGeoJson(geojson); // put geoJSON markers on map
+
+			} catch (e) {
+				alert("Not a GeoJSON file!");
+			}
+			zoom(map); // zoom map to proper depth     
+		//	drawPolyline(); // draw track path connecting markers   
+		}
+		
+		// load JSON data onto Map
+		function loadJsonString(jsonString) {
+
+			const json = JSON.parse(jsonString);
+			
+			var i;
+            // find min, max for PM2.5
+             var PMMax = Math.max.apply(Math,json.map(function(o){return o.PM25;}))
+             var PMMin = Math.min.apply(Math,json.map(function(o){return o.PM25;}))
+             
+             // find min, max for CO2
+             var CO2Max = Math.max.apply(Math,json.map(function(o){return o.TVOC;}))
+             var CO2Min = Math.min.apply(Math,json.map(function(o){return o.TVOC;}))
+			
+			// check for "0.0, 0.0" Lat and Long
+			var Data3 = [];
+			for (i = 0; i < json.length; i = i + 1) { // Loop thru json array
+				if (json[i].Latitude == 0.0) { // zero Lat?
+					// Data3 = json.splice(i,1);  // splice "out" this whole row from data array
+				//	console.log("Removing row: " + i + ", value: " + json[i].Latitude);
+				} else {
+					Data3.push(json[i]); // copy row to array
+					 
+					
+				// load up heat map data array	
+			
+			     var uuu = new google.maps.LatLng(json[i].Latitude, json[i].Longitude); // get LanLng object for each point
+			     
+               
+                    weight = json[i].TVOC;  // PM2.5 weight data
+                    rate = (weight-CO2Min)/(CO2Max-CO2Min+1);  // scale to min, max
+                    dataC = "CO2";
+			    /*
+			    var checkbox = document.querySelector("input[name=data]");
+			    
+               // set up listener for data check box
+               ( function (x) {
+               	
+                 checkbox.addEventListener('change', function() {
+                 if (this.checked) {
+                    console.log("PM");
+                    weight = json[x].PM25;  // PM2.5 weight data
+                    rate = (weight-PMMin)/(PMMax-PMMin+1);  // scale to min, max
+                    dataC = "PM";
+                 } else {
+                    console.log("CO2");
+                    weight = json[x].CO2;  // PM2.5 weight data
+                    rate = (weight-CO2Min)/(CO2Max-CO2Min+1);  // scale to min, max
+                    dataC = "CO2";
+                 }
+			    
+			    }); // listener
+			    */
+			    
+                 console.log("Data: " + dataC + ", " + "Weight: " + weight + ", " + "Rate: " + rate);
+			     
+			    // push data to heatmap array 
+			     heatMapData1.push(
+				  {location: uuu,
+				  weight: rate}
+			    ); 
+			    
+			  
+	
+			  // })(i) // tricky function passes "i"
+					
+			  } // else
+			} // for
+
+			const geojson = GeoJSON.parse(Data3, {
+				Point: ["Latitude", "Longitude"]
+			}); // convert json to geojson
+
+			drawTheBox(json); // draw track infobox
+
+			map.data.addGeoJson(geojson); // put geoJSON markers on map
+			
+			trackJSON = json;
+
+			zoom(map); // zoom map to proper depth     
+			drawPolyline(); // draw track path connecting markers   
+			
+			
+			// US AQI
+			 var gradient = [
+				'rgba(0, 228, 0, 0)',
+				'rgba(255, 255, 0, 1)',
+				'rgba(255, 126, 0, 1)',
+				'rgba(255, 0, 0, 1)',
+				'rgba(143, 63, 151, 1)',
+				'rgba(126, 0, 35, 1)'	
+			];
+	 
+
+			heatmap.set('gradient', gradient);
+			//heatmap.setMap(map);  // set in toggle DIV
+			  
+		}
+		
+
+		function drawTheBox(json) {
+			// add markers (and assemble data for the lines)
+			var points = [];
+			var pmVals = [];
+			var tvocVals = [];
+			var timeVals = [];
+			var noiseVals = [];
+			var markersP = [];
+			
+			//var	tdwnl = "downloadTrackCSV();";	// CSV download track data
+			
+			// find min, max for PM2.5
+             var PMMax = Math.max.apply(Math,json.map(function(o){return o.PM25;}))
+             var PMMin = Math.min.apply(Math,json.map(function(o){return o.PM25;}))
+             
+             // find min, max for CO2
+             var CO2Max = Math.max.apply(Math,json.map(function(o){return o.TVOC;}))
+             var CO2Min = Math.min.apply(Math,json.map(function(o){return o.TVOC;}))
+
+			// Loop through sensor data arrays
+			for (var i = 0; i < json.length - 2; i++) {
+
+				dp = json[i];
+			//	console.log(dp);
+				var ic = dp.icon;
+				var pm = "PM2.5: " + dp.PM25;
+
+				points.push(new google.maps.LatLng(dp.Latitude, dp.Longitude));
+				
+				var coord = new google.maps.LatLng(dp.Latitude, dp.Longitude);
+
+				var markerP = new google.maps.Marker({ // keep invisible
+					position: coord
+					
+				});
+				
+				markersP.push(markerP); // push onto markers array for poly
+
+				if (!dp.TVOC || !dp.PM25 || !dp.created_at) {} // check for nulls or undefined
+				else {
+					//console.log("PM25: " + dp.PM25);
+					pmVals.push(dp.PM25);
+					tvocVals.push(dp.TVOC);
+					timeVals.push(dp.created_at);
+					if (dp.status === null || dp.status == "no name") {} else {
+						noiseVals.push(dp.elevation);
+											
+					//	console.log("NoiseVals: " + noiseVals);
+					}
+				}
+			} // for loop
+
+			if (pmVals.length == 0 || tvocVals.length == 0) {
+			  alert("Dates invalid. Pick another start & end date and try again.");
+			  return;
+			} 
+
+			// compute average data values along track 
+			var total = 0;
+			// alert(pmVals.length);
+			for (i = 0; i < pmVals.length; i++) {
+				if (pmVals[i] === null) {} else {
+					total += parseInt(pmVals[i]);
+				} // only add non-NULLS
+			}
+			var pmAvg = total / pmVals.length;
+
+			// compute average TVOC values along track 
+			total = 0;
+
+			for (i = 0; i < tvocVals.length; i++) {
+				if (tvocVals[i] === null) {} else {
+					total += parseInt(tvocVals[i]);
+				} // only add non-NULLS
+			}
+			var tvAvg = total / tvocVals.length;
+
+			// console.log("Average PM on track: "+pmAvg + "Average TVOC on track: "+tvAvg);
+
+			if (timeVals[0] === null) {} // check for NULLS
+			else {
+				justDate = timeVals[0].slice(0, 10); //slice off date
+				timeStart = timeVals[0].slice(11, 19); // slice off track start time
+				var len = timeVals.length - 1;
+				timeEnd = timeVals[len].slice(11, 19); // slice off track end time
+			}
+
+			if (dp.TrackName === "" || dp.TrackName === null) {
+				trackNameCurrent = dp.userid;
+			} else {
+				trackNameCurrent = dp.TrackName.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, '');
+			} // replace special chars with blank
+
+			// calc noise average  
+			if (noiseVals.length > 0) {
+				total = 0;
+				for (i = 0; i < noiseVals.length; i++) {
+					if (noiseVals[i] === null) {} else {
+						total += parseInt(noiseVals[i]);
+					} // only add non-NULLS
+				}
+			}
+			var noiseAvg = total / noiseVals.length;
+			if (noiseAvg === null || noiseAvg == "no name") {
+				noiseAVG = "no data";
+			}
+			
+			var cont = '<div id="bodyContent" align="left" >' + "<b>" + "Track Name: " + "</b>" + trackNameCurrent + "<br>" +
+				//"<b>" + "User: " + "</b>" + dp.userid + "<br>" +
+				"<b>" + "User: " + "</b>" + currentDeviceName + "<br>" +
+				"<b>" + "Device: " + "</b>" + "BackpAQ3 with PM + CO2" + "<br>" +
+				"<b>" + "PM2.5 Min: " + "</b>"+ PMMin + unitsPM  + "&nbsp;&nbsp;" + "<b>PM2.5 Max: </b>"+ PMMax + unitsPM + "<br>" +
+				"<b>" + "CO2 Min: " + "</b>" + CO2Min + " ppm"  + "&nbsp;&nbsp;" + "<b>CO2 Max:  </b>" + CO2Max + " ppm"  + "<br>" +
+				"<b>" + "Avg. PM2.5: " + "</b>" + Math.round(pmAvg) + unitsPM + "<b> &nbsp;  Avg. CO2: " + "</b>" + Math.round(tvAvg) + " ppm" +
+				"<br>" + "<b>" + "Avg. Sound Level: " + "</b>" + Math.round(noiseAvg) + unitsDB +
+				"<br>" + "<b>" + "Date/Time: " + "</b>" + justDate + "&nbsp;" + timeStart + "-" + timeEnd + 
+				"<br><br>" + "<button id=showch onclick=" +tdwnldd +">Export Track Data to CSV</button>" +
+				"</div>";
+
+			document.getElementById("info-box").style.display = "block"; // pop up box
+			document.getElementById('info-box').style.visibility = "visible";
+			document.getElementById('info-box').innerHTML = cont; // insert content into info-box
+			
+		// new poly code. Draw bounding box around specified area and calculate averages, etc. 
+		
+		var drawingManager = new google.maps.drawing.DrawingManager({
+                drawingMode: google.maps.drawing.OverlayType.MARKER,
+                  polygonOptions: {
+                    fillColor: 'red',
+                    strokeColor: 'red',
+                    fillOpacity: .2,
+                    editable: false,
+                    draggable: true
+                  },
+                  drawingControl: true,
+                  drawingControlOptions: {
+                  position: google.maps.ControlPosition.TOP_RIGHT,
+                  drawingModes: ['polygon']
+                 },
+                drawingMode: null
+               });
+       
+        var infowindow = new google.maps.InfoWindow();
+       // listen for complete polygon, then compute area and markers inside
+          var polyCompleteHandle = google.maps.event.addListener(drawingManager, 'polygoncomplete', function(polygon) {
+  	        pmPolyVals = 0;
+  	        co2PolyVals = 0;
+            drawingManager.setDrawingMode(null); // Switch back to non-drawing mode after drawing a shape.
+            var area = google.maps.geometry.spherical.computeArea(polygon.getPath());
+            var poly = polygon.getPath();
+
+            var markerCnt = 0;
+            for (var i=0; i<markersP.length; i++) {
+              if (google.maps.geometry.poly.containsLocation(markersP[i].getPosition(), polygon)) {
+                markerCnt++;
+                pmPolyVals += parseInt(pmVals[i]); //grab PM2.5 value for this marker
+                co2PolyVals += parseInt(tvocVals[i]); // grab CO2 value
+              }
+            }  
+            console.log("marker count: " + markerCnt);
+            if (markerCnt > 0)
+            {
+             infowindow.setContent("<div style='width:250px; text-align:left;'>" + "<b>Selection area: </b>"+(area*10.764).toFixed(2) +" sq feet" + "<br>" +
+             "<b># of markers in the box: </b>" + markerCnt + "<br>" +
+             "<b>Avg. PM2.5 of markers in box: </b>" + (pmPolyVals / markerCnt).toFixed(1) + " ug/m3" + "<br>" +
+             "<b>Avg. CO2 of markers in box: </b>"   + (co2PolyVals / markerCnt).toFixed(0) + " ppb" + "</DIV>");
+            }
+            else
+            {
+              infoWindow.setContent("No markers in box. Select at least one marker.");
+            }
+            infowindow.setPosition(polygon.getPath().getAt(0));
+            infowindow.open(map);
+          // Insert  
+           var insertHandle = google.maps.event.addListener(polygon.getPath(), 'insert_at', function(index, obj) {
+           // alert("insert");
+           pmPolyVals = 0;
+            co2PolyVals = 0;
+           var area = google.maps.geometry.spherical.computeArea(polygon.getPath());
+            var poly = polygon.getPath();
+          
+            var markerCnt = 0;
+            for (var i=0; i<markersP.length; i++) {
+              if (google.maps.geometry.poly.containsLocation(markersP[i].getPosition(), polygon)) {
+                markerCnt++;
+               // alert("PM2.5: " + pmVals[i]);
+                pmPolyVals += parseInt(pmVals[i]); //grab PM2.5 value for this marker
+                co2PolyVals += parseInt(tvocVals[i]); // grab CO2 value
+              }
+            }  
+            if (markerCnt > 0)
+            {
+             infowindow.setContent("<div style='width:250px; text-align:left;'>"+"<b>Selection area: </b>"+(area*10.764).toFixed(2)+" sq feet" + "<br>" +
+             "<b># of markers in the box: </b>" + markerCnt + "<br>" + 
+              "<b>Avg. PM2.5 of markers in box: </b>" + (pmPolyVals / markerCnt).toFixed(1) + " ug/m3" + "<br>" +
+              "<b>Avg. CO2 of markers in box: </b>"   + (co2PolyVals / markerCnt).toFixed(0) + " ppb" + "</div>");
+            }
+            else
+            {
+             infoWindow.setContent("No markers in box. Select at least one marker.");
+            }
+           infowindow.setPosition(polygon.getPath().getAt(0));
+           infowindow.open(map);
+           
+           
+           });
+         // Set
+           var setHandle = google.maps.event.addListener(polygon.getPath(), 'set_at', function(index, obj) {
+           	pmPolyVals = 0;
+           	co2PolyVals = 0;
+            // alert("set");
+           var area = google.maps.geometry.spherical.computeArea(polygon.getPath());
+          
+            var markerCnt = 0;
+            for (var i=0; i<markersP.length; i++) {
+              if (google.maps.geometry.poly.containsLocation(markersP[i].getPosition(), polygon)) {
+                markerCnt++;
+               // alert("PM2.5: " + pmVals[i]);
+                pmPolyVals += parseInt(pmVals[i]); //grab PM2.5 value for this marker
+                co2PolyVals += parseInt(tvocVals[i]); // grab CO2 value
+              }
+            }  
+           if (markerCnt > 0)
+           	{
+              infowindow.setContent("<div style='width:250px; text-align:left;'>" + "<b>Selection area: </b>"+(area*10.764).toFixed(2)+" sq feet" + "<br>" +
+              "<b># of markers in the box: </b>" + markerCnt + "<br>" +
+              "<b>Avg. PM2.5 of markers in box: </b>" + (pmPolyVals / markerCnt).toFixed(1) + " ug/m3" + "<br>" +
+              "<b>Avg. CO2 of markers in box: </b>" + (co2PolyVals / markerCnt).toFixed(0) + " ppb" + "</div>");
+            }
+            else
+            {
+              infoWindow.setContent("No markers in box. Select at least one marker.");
+            }
+              infowindow.setPosition(polygon.getPath().getAt(0));
+              infowindow.open(map);
+              
+            
+           });
+           google.maps.event.addListener(polygon, 'click', function (event) {
+            alert("Closing box");
+           // Close up and clear listeners 
+            polygon.setMap(null);
+           // google.maps.event.removeListener(polyCompleteHandle);
+           // google.maps.event.removeListener(setHandle);
+           // google.maps.event.removeListener(insertHandle);
+          }); 
+        });
+        drawingManager.setMap(map);		
+			
+		}
+		
+		/**
+		 * Update a map's viewport to fit each geometry in a dataset
+		 */
+		function zoom(map) {
+			const bounds = new google.maps.LatLngBounds();
+			//  gLayer = new google.maps.Data();
+			infowindow4 = new google.maps.InfoWindow();
+
+			map.data.forEach((feature) => {
+				processPoints(feature.getGeometry(), bounds.extend, bounds);
+				extractFeatures(feature); // enumerate each feature and populate infowindow
+			});
+			map.fitBounds(bounds);
+		}
+		
+		// draw line connecting each point along track    
+		function drawPolyline() {
+			
+		// Define the symbol, using one of the predefined paths ('CIRCLE')
+        // supplied by the Google Maps JavaScript API.
+        const lineSymbol = {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 8,
+        strokeColor: "#393",
+        };
+			flightPath = new google.maps.Polyline({
+				path: flightPlanCoords,
+				geodesic: true,
+				draggable: true,
+				strokeColor: "#FF0000",
+				strokeOpacity: 0.5,
+				strokeWeight: 2,
+				trackTitle: tracksArray[0],
+				icons: [
+                 {
+                   icon: lineSymbol,
+                   offset: "100%",
+                  },
+                ]
+			});
+			
+			// Draw poly line and animate
+			flightPath.setMap(map); // draw polyline on map  
+			//animateCircle(flightPath); // animate marker long the poly line
+			
+			// handle infowindow  
+			var handelPolyClick = function(eventArgs, polyLine) {
+				infowindow5 = new google.maps.InfoWindow();
+				var trck;
+				// here you can handle the poly
+				if (flightPath.trackTitle != null) {
+					trck = "<b>Track Name: </b>" + flightPath.trackTitle.replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, '');
+				} else {
+					trck = "<b>Track Name: </b>" + "";
+				}
+
+				console.log("trck: " + flightPath.trackTitle);
+				infowindow5.setContent("<div style='width:150px;'>" + trck + "</div>");
+				infowindow5.setPosition(eventArgs.latLng);
+				infowindow5.open(map);
+			};
+
+			var handlePolyClose = function(eventArgs, polyLine) {
+				infowindow5.close();
+			};
+
+			google.maps.event.addListener(flightPath, 'mouseover', function(e) {
+				handelPolyClick(e, this);
+			});
+
+			google.maps.event.addListener(flightPath, 'mouseout', function(e) {
+				handlePolyClose(e, this);
+			});
+		}
+		
+      // Use the DOM setInterval() function to change the offset of the symbol
+      // at fixed intervals.
+      function animateCircle(line) {
+       let count = 0;
+
+       window.setInterval(() => {
+         count = (count + .05) % 200;// slow waaaay down 
+
+         const icons = line.get("icons");
+
+         icons[0].offset = count / 2 + "%";
+         line.set("icons", icons);
+       }, 20);
+      }
+
+
+		function showTrack() {
+			flightPath.setMap(map);
+		}
+
+		function hideTrack() {
+			flightPath.setMap(null);
+		}
+
+		function hideMarkers(feature) {
+			map.data.setStyle(function(feature) {
+				return {
+					visible: false
+				}; // hide markers
+			});
+		}
+
+		// fetch track data from geojson file FOR EACH FEATURE    
+		function extractFeatures(feature) {
+			// prepare infowindow content to be displayed on 'click'
+			// now includes PM, CO2, Noise values 
+
+			var ll = feature.getGeometry().get(); // get lanlng object
+			var latt = parseFloat(ll.lat());
+			var lngg = parseFloat(ll.lng());
+
+			var rrr = {
+				lat: latt,
+				lng: lngg
+			};
+				
+			
+			flightPlanCoords.unshift(rrr); //push onto path array
+			tracksArray.push(feature.getProperty("TrackName")); // push track name)
+			
+			var commentStr = "";
+			var ifAnyComments = feature.getProperty("Comments");
+			if (ifAnyComments == null) {
+				commentStr = "";
+			}
+			else {
+				commentStr = ', Tag: ' + ifAnyComments;
+			}
+
+			// create listener for click      
+			map.data.addListener('click', function(event) {
+				map.data.setStyle(function(feature) { // set style...
+					return {
+						icon: feature.getProperty("icon"),
+						title: "PM2.5: " + feature.getProperty("PM25") + unitsPM + commentStr,
+						visible: true
+					}; // color of icon based on embedded PM info in geojson file
+				});
+				// set up content for infowindow 
+				pm1 = event.feature.getProperty("PM25"); // set temp PM value
+
+				//var date = new Date(event.feature.getProperty("created_at")+ "UTC");
+				//var createTime =  date.toString(); // "Wed Jun 29 2011 09:52:48 GMT-0700 (PDT)"
+				var createTime = event.feature.getProperty("created_at");
+				var d = new Date();
+				var n = d.getDay();
+
+				// extract ambient noise value
+
+				noise2 = parseFloat(event.feature.getProperty("elevation")); // fetch noise entry from "status" field
+
+				if (typeof noise2 !== 'undefined' && !isNaN(noise2)) // exclude nulls, undefined and NaN
+				{
+					noisey = noise2 + " dB(A)"; // current noise entry
+				} else {
+					noisey = "";
+				} // set to '' if no real value
+
+				var trackID = "<b>" + "Measurement No.: " + "</b>" + event.feature.getProperty("entry_id");
+				var dateTime = "<b>" + "Created at: " + "</b>" + n + " " + createTime;
+				var pm25 = "<b>" + "PM2.5: " + "</b>" + event.feature.getProperty("PM25") + unitsPM; // fetch PM2.5 value
+				//   var AQI = "<b>" + "AQI: " + "</b>" + event.feature.getProperty("AQI");
+				var TVOCi = Math.trunc(event.feature.getProperty("TVOC")); // fetch and truncate TVOC value (really CO2)
+				var TVOC = "<b>" + "CO2: " + "</b>" + TVOCi; // really CO2
+				var noise1 = "<b>" + "Sound: " + "</b>" + noisey;
+
+				var comments_parsed = event.feature.getProperty("Comments");
+				var comments = "<b>" + "Comments: " + "</b>" + comments_parsed;
+
+				//var user = event.feature.getProperty("userid"); // userid
+				var user = currentDeviceName; // BackpAQ user
+				if (event.feature.getProperty("TrackName") != null) {
+					var trackN = event.feature.getProperty("TrackName").replace(/[&\/\\#,+()$~%.'":*?<>{}]/g, ''); // extract track name and replace special chars
+				} else {
+					trackN = user;
+					
+					
+				}
+
+				var userid = "<b>" + "User: " + "</b>" + user;
+				var trackName = "<b>" + "Track Name: " + "</b>" + trackN; // pick up current track name
+				if (!trackName)
+					{
+						trackName = dateTime;
+					}
+
+				infowindow4.setContent("<div style='width:250px; text-align:left;'>" + trackName + '<br>' + userid +
+									   '<br>' + trackID + '<br>' + '<hr>' + dateTime + '<br>' + pm25 + '<br>' + TVOC + '<br>' + noise1 +
+									   '<br>' + comments + "</div>");
+				// position the infowindow on the marker
+				infowindow4.setPosition(event.feature.getGeometry().get());
+				// anchor the infowindow on the marker
+				infowindow4.setOptions({
+					pixelOffset: new google.maps.Size(0, -30)
+				});
+				infowindow4.open(map);
+			});
+				
+			
+		}
+		/**
+		 * Process each point in a Geometry, regardless of how deep the points may lie.
+		 */
+		function processPoints(geometry, callback, thisArg) {
+			if (geometry instanceof google.maps.LatLng) {
+				callback.call(thisArg, geometry);
+			} else if (geometry instanceof google.maps.Data.Point) {
+				callback.call(thisArg, geometry.get());
+			} else {
+				geometry.getArray().forEach((g) => {
+					processPoints(g, callback, thisArg);
+				});
+			}
+		}
+		
+// get "Channel C" (Track) metadata and timeframe for search
+
+		function getInputs() {
+			var text;
+			var devName;
+			
+			var e = document.getElementById("deviceList");
+            function onChange() {
+              var value = e.value;
+              text = e.options[e.selectedIndex].text;
+              devName = text;
+              //console.log(value, text);
+            }
+            e.onchange = onChange;
+            onChange(); 
+			
+			currentDeviceName = devName; // set global backpaq device name for this session
+
+           console.log("Device name chosen is " + devName);
+           
+	      // given devName from user input, lookup device, channel and API key	
+		
+		   var dIndex = trackDevice.indexOf(devName.toUpperCase());
+		   
+	       if (dIndex >= 0) { // is it one of ours?
+
+				bpDevice =trackDevice[dIndex]; // BackpAQ device name
+				bpChannel = trackChannel[dIndex]; // ThingSpeak "Tracks" channel
+				bpKey = trackKey[dIndex]; // ThingSpeak API "read" key
+			}
+			 
+			 else {
+					alert("device name not found: " + bpDevice + " ...try again!");	
+			}
+		
+		    currentDeviceName2 = bpDevice;
+			var result;
+			
+			$.getJSON('https://api.thingspeak.com/channels/' + bpChannel + '/feed.json?api_key=' + bpKey + '&start=' + startTrackDate + '&end=' + endTrackDate +
+			'&status=true&location=true&elevation=true&metadata=true&results=2000&timezone=America%2FLos_Angeles', 
+			
+					function(data) {
+						// if no access
+						if (data.length == 0) {
+							console.log("No data!");
+							return;
+						}
+						// success
+						// console.log('Success from ThingSpeak:', data);
+						var jParse = JSON.stringify(data, null, 2); // parse and pretty
+						//   console.log("jParse: " + jParse);
+						// handle ThingSpeak data EXPORT type of file...   
+						// slice out actual JSON data of iterest
+						var foundChannel = jParse.indexOf("channel");
+						if (foundChannel > 0) // if ThingSpeak header present
+						{
+							var foundFeeds = jParse.indexOf('"feeds":'); // "feeds" is the object we want
+							var lastBracket = jParse.lastIndexOf("}");
+							var res = jParse.slice(foundFeeds + 8, lastBracket - 1); // slice off the "keeper" JSON     
+
+							result = JSON.parse(res); // parse back into JSON object
+
+						} else // regular JSON file
+						{
+							result = JSON.parse(jParse);
+						}
+						
+                        //console.log("result: " + result);
+						var formatted = JSON.stringify(result, null, 2);
+						// console.log("+++>>> " + formatted);
+
+						//document.getElementById('result').value = formatted;
+
+						// substitute proper BackpAQ names for ThingSpeak field names. "TVOC" is really CO2    
+						var mapObj = {
+							
+							field1: "userid",
+							field2: "Latitude",
+							field3: "Longitude",
+							field4: "PM25",
+							field5: "TrackName",
+							field6: "icon",
+							field7: "TVOC",
+							field8: "Comments"
+						};
+						var Data2 = formatted.replace(/field1|field2|field3|field4|field5|field6|field7|field8/gi, function(matched) {
+							return mapObj[matched];
+						});			
+						
+						loadJsonString(Data2); // load JSON string onto Map 
+					})
+				.catch((error) => {
+					console.error('Error:', error);
+				});
+		}
+// get "Channel C" metadata and timeframe for search
+
+		function getPreInputs() {
+			var text;
+			var devName;
+			var start_date;
+			var e = document.getElementById("deviceList");
+            function onChange() {
+              var value = e.value;
+              text = e.options[e.selectedIndex].text;
+              devName = text;
+              //console.log(value, text);
+            }
+            e.onchange = onChange;
+            onChange();
+			
+			currentDeviceName = devName; // set global backpaq device name for this session
+
+           console.log("Device name chosen is " + devName);
+           
+	      // given devName from user input, lookup device, channel and API key	
+		
+		   var dIndex = trackDevice.indexOf(devName.toUpperCase());
+		   
+	       if (dIndex >= 0) { // is it one of ours?
+
+				bpDevice =trackDevice[dIndex]; // BackpAQ device name
+				bpChannel = trackChannel[dIndex]; // ThingSpeak "Tracks" channel
+				bpKey = trackKey[dIndex]; // ThingSpeak API "read" key
+			}
+			 
+			 else {
+					alert("device name not found: " + bpDevice + " ...try again!");	
+			}	
+			
+			// Set the global configs to synchronous 
+            $.ajaxSetup({
+               async: false
+            });
+			
+			$.getJSON("https://api.thingspeak.com/channels/" + bpChannel + "/feeds/last_data_age.json?api_key=" + bpKey, function(result) {
+			 					
+		        var mee = result;
+		       
+				//console.log("<Time since last data entry: " + secondsToDhms(mee.last_data_age));
+				
+				// in plain english...
+               const secondsSinceLastEntry = mee.last_data_age;
+               
+               const formattedTime = formatTimeSinceLastEntry(secondsSinceLastEntry);
+               console.log(`<Time since last entry: ${formattedTime}`);
+
+              // format as UTC
+               const formattedTime2 = formatTimeSinceLastEntry2(secondsSinceLastEntry);
+               console.log(`<Time since last entry (UTC): ${formattedTime2}`);
+               
+               start_date = formattedTime2;
+			
+			   lastDataFromDevice = start_date;
+			
+			   console.log(">>>Start Data in Pre is " + lastDataFromDevice);
+			   
+			  // put up infowindow
+			   
+			   var infowindow1 = new google.maps.InfoWindow();
+               infowindow1.setContent("Device: " + bpDevice + "<br>" + "Channel: " + bpChannel + "<br>"+ "Time since last entry: " + formattedTime);
+				// position the infowindow on the marker
+				//infowindow1.setPosition();
+				// anchor the infowindow on the marker
+				infowindow1.setOptions({
+					pixelOffset: new google.maps.Size(0, -30)
+				});
+				infowindow1.open(map);
+			   
+					
+			})  // getJSON
+				
+            .fail(function() { console.log("*** error...getJSON call failed ***");
+            
+             });
+             
+             // Set the global configs to synchronous 
+            $.ajaxSetup({
+               async: true
+            });
+				
+       }
+       
+   function formatTimeSinceLastEntry2(seconds) {
+     const now = new Date();
+     const entryTime = new Date(now - seconds * 1000); // Convert seconds to milliseconds
+
+     // Reformat the timestamp without the "T", as YYYY-MM-DD hh:mm:ss
+     const formattedTime = entryTime.toISOString().replace("T", " ").split(".")[0];
+     return formattedTime;
+   }  
+   
+   function formatTimeSinceLastEntry(seconds) {
+    const now = new Date();
+    const entryTime = new Date(now - seconds * 1000); // Convert seconds to milliseconds
+
+    const diffInMilliseconds = now - entryTime;
+    const diffInSeconds = Math.floor(diffInMilliseconds / 1000);
+
+    if (diffInSeconds < 60) {
+      return `${diffInSeconds} second${diffInSeconds !== 1 ? 's' : ''} ago`;
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+     } else if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+     } else {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `${days} day${days !== 1 ? 's' : ''} ago`;
+    }
+   }  
+       
+       
+ function getDates() {
+ 				
+
+  $(function() {
+
+  $('input[name="daterange"]').daterangepicker({
+    opens: 'left',
+	drops: 'down',
+    timePicker: true,
+   // startDate: "01/01/24",
+    startDate: moment(lastDataFromDevice).subtract(2, 'days'),
+    endDate: "12/01/2024",
+    
+     ranges: {
+     	'Last data for this BackpAQ' :[moment(lastDataFromDevice).subtract(90, 'days'), moment(lastDataFromDevice).add(2, "days")],
+     	'This class (Last 90 minutes)' : [moment().subtract(90, 'minutes'), moment().add(2, 'hours')],
+        'Today': [moment().subtract(8, 'hours'), moment().add(2, 'hours')],
+        'Yesterday': [moment().subtract(23, 'hours'), moment().subtract(1, 'days')],
+        'Last 7 Days': [moment().subtract(6, 'days'), moment().add(2, 'hours')],
+        'Last 30 Days': [moment().subtract(29, 'days'), moment().add(2, 'hours')]
+      /*  'This Month': [moment().startOf('month'), moment().endOf('month')],
+        'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]*/
+    },
+    
+  }, function(start, end, label) {
+    
+     startTrackDate = start.format('YYYY-MM-DD HH:mm:ss');
+     endTrackDate = end.format('YYYY-MM-DD HH:mm:ss');
+    
+    console.log("A new date selection was made: " + startTrackDate + ' to ' + endTrackDate);
+    
+	getInputs(); // given dates/times, fire up dataloader for Track Data
+    
+  });
+});
+ 	
+}		
+	
+
+		function toggleHeatmap() {
+
+			heatmap.setMap(heatmap.getMap() ? null : map);
+		}
+
+		function toggleGTraffic() {
+			// trafficLayer = new google.maps.TrafficLayer(); // how cool is this?   
+			if (trafficLayer.getMap() == null) {
+				//traffic layer is disabled.. enable it  
+				trafficLayer.setMap(map);
+			} else {
+				//traffic layer is enabled.. disable it
+				trafficLayer.setMap(null);
+			}
+		}
+		
+		function toggleAQI() {
+			
+			getGoogleAQI() ;
+			
+		}
+
+		function popup(mylink, windowname) {
+			var href;
+			if (!window.focus) return true;
+			else href = mylink.href;
+			window.open(href, windowname, 'width=400,height=200,scrollbars=yes');
+			return false;
+
+		}
+
+		// display today's track data from airnow     
+		function displayAirnow() {
+
+			var x = document.getElementById("airnow");
+			if (x.style.display === "none") {
+				x.style.display = "block";
+			} else {
+				x.style.display = "none";
+			}
+		} // displayairnow
+
+	function displayTrack() {
+			// togTracks();
+			// display geojson tracks file
+			var pLayer = new google.maps.Data();
+			var infowindow1 = new google.maps.InfoWindow();
+			geoURL = 'https://drewcssv.github.io/ssvaq/feeds-15-2.geojson';
+			pLayer.loadGeoJson(geoURL, null,
+				function(feature) {
+					console.log("loadGeoJson", feature.length); // for each marker...
+					pLayer.setStyle(function(feature) { // set style...
+						return {
+							icon: feature.getProperty("icon"),
+							title: feature.getProperty("userid"),
+							visible: true
+						} // color of icon based on embedded AQI in geojson file
+					});
+				}
+			); // geojson file from BackpAQ session      
+
+			pLayer.setMap(pLayer.getMap() ? null : map);
+
+			// prepare infowindow content to be display on 'click'
+			pLayer.addListener('click', function(event) {
+				// Parse feature/property data from JSON
+				var trackID = "<b>" + "Track id: " + "</b>" + event.feature.getProperty("entry_id");
+				var dateTime = "<b>" + "Created at: " + "</b>" + event.feature.getProperty("created_at");
+				var pm25 = "<b>" + "PM2.5: " + "</b>" + event.feature.getProperty("PM25");
+				var AQI = "<b>" + "AQI: " + "</b>" + event.feature.getProperty("AQI");
+				var iconAQI = event.feature.getProperty("icon"); // AQI "color"
+				//console.log(iconAQI);
+				var comments = "<b>" + "Comments: " + "</b>" + event.feature.getProperty("Comments");
+				//var userID = "<b>" + "User: " + "</b>" + event.feature.getProperty("userid");
+				var userID = "<b>" + "User: " + "</b>" + currentDeviceName;
+				var noise = "<b>" + "Sound Level: " + "</b>" + event.feature.getProperty("elevation"); // pick up sound level (dB(A)) from "elevation" field
+
+				// define infowindow  
+				infowindow1.setContent("<div style='width:250px; align:left;'>" + userID + "<br>" + trackID + '<br>' + '<hr>' + dateTime + '<br>' + pm25 + '<br>' + noise + '<br>' + comments + "</div>");
+				// position the infowindow on the marker
+				infowindow1.setPosition(event.feature.getGeometry().get());
+				// anchor the infowindow on the marker
+				infowindow1.setOptions({
+					pixelOffset: new google.maps.Size(0, -30)
+				});
+				infowindow1.open(map);
+			});
+	} // displayTrack
+
+		//  EPA correction + two “conversions” to adjust PM2.5 concentrations and corresponding AQI values for woodsmoke, an “AQandU” calibration (0.778 * PA + 2.65)
+		//  to a long-term University of Utah study in Salt Lake City and an “LRAPA” calibration (0.5 * PA − 0.68) to a Lane Regional Air
+		//  Pollution Agency study of PA sensors. 
+		// LRAPA = PM_Val_cf1 = 0.5 * PM_Val_cf1 -.68
+		// AQandU = PM_Val_cf1 = 0.778 * PM_Val_cf1 + 2.65;
+
+		function selectCorrection(name) {
+			pmCorrection = ""; // default
+			if (name == "None") {
+				console.log("Choice: ", name);
+				pmCorrection = "None";
+				// initialize();
+				document.getElementById("no-choice").checked = true;
+				document.getElementById("USEPA-choice").checked = false;
+				document.getElementById("LRAPA-choice").checked = false;
+				document.getElementById("AQandU-choice").checked = false;
+			} else if (name == "USEPA") {
+				console.log("Choice: ", name);
+				pmCorrection = "(USEPA)";
+				// initialize();
+				document.getElementById("no-choice").checked = false;
+				document.getElementById("USEPA-choice").checked = true;
+				document.getElementById("LRAPA-choice").checked = false;
+				document.getElementById("AQandU-choice").checked = false;
+
+			} else if (name == "LRAPA") {
+				console.log("Choice: ", name);
+				pmCorrection = "(LRAPA)";
+				// initialize();
+				document.getElementById("no-choice").checked = false;
+				document.getElementById("USEPA-choice").checked = false;
+				document.getElementById("LRAPA-choice").checked = true;
+				document.getElementById("AQandU-choice").checked = false;
+
+			} else if (name == "AQandU") {
+				console.log("Choice: ", name);
+				pmCorrection = "(AQandU)";
+				// initialize();
+				document.getElementById("no-choice").checked = false;
+				document.getElementById("USEPA-choice").checked = false;	
+				document.getElementById("LRAPA-choice").checked = false;
+				document.getElementById("AQandU-choice").checked = true;
+			}
+		}
+
+
+		function selectAverage(name) {
+			pmAverage = ""; // default
+			if (name == "Realtime") {
+				//  console.log("Choice: ", name);
+				pmAverage = "realtime";
+				// initialize();
+				document.getElementById("realtime-choice").checked = true;
+				document.getElementById("10min-choice").checked = false;
+				document.getElementById("1hr-choice").checked = false;
+				document.getElementById("1day-choice").checked = false;
+			} else if (name == "10_Min") {
+				// console.log("Choice: ", name);
+				pmAverage = "10";
+				// initialize();
+				document.getElementById("realtime-choice").checked = false;
+				document.getElementById("10min-choice").checked = true;
+				document.getElementById("1hr-choice").checked = false;
+				document.getElementById("1day-choice").checked = false;
+
+			} else if (name == "1_Hr") {
+				// console.log("Choice: ", name);
+				pmAverage = "60";
+				// initialize();
+				document.getElementById("realtime-choice").checked = false;
+				document.getElementById("10min-choice").checked = false;
+				document.getElementById("1hr-choice").checked = true;
+				document.getElementById("1day-choice").checked = false;
+
+			} else if (name == "1_Day") {
+				//  console.log("Choice: ", name);
+				pmAverage = "Daily";
+				// initialize();
+				document.getElementById("realtime-choice").checked = false;
+				document.getElementById("10min-choice").checked = false;
+				document.getElementById("1hr-choice").checked = false;
+				document.getElementById("1day-choice").checked = true;
+			}
+		}
+		
+
+function selectRefresh(name) {
+			refreshRate = "0"; // default
+			doRefresh = false;
+			if (name == "NoneR") {
+			
+				refreshRate = "0";
+		        clearInterval(refreshHandle);
+				
+				document.getElementById("none-choice").checked = true;
+				document.getElementById("30sec-choice").checked = false;
+				document.getElementById("1mins-choice").checked = false;
+				document.getElementById("10mins-choice").checked = false;
+				document.getElementById("chart-choice").checked = false;
+				
+			} else if (name == "30_sec") {
+				
+				refreshRate = "30";
+			
+				document.getElementById("none-choice").checked = false;
+				document.getElementById("30sec-choice").checked = true;
+				document.getElementById("1mins-choice").checked = false;
+				document.getElementById("10mins-choice").checked = false;
+				document.getElementById("chart-choice").checked = false;
+			
+			} else if (name == "1_Min") {
+			
+				refreshRate = "60";
+				
+				document.getElementById("none-choice").checked = false;
+				document.getElementById("30sec-choice").checked = false;
+				document.getElementById("1mins-choice").checked = true;
+				document.getElementById("10mins-choice").checked = false;
+				document.getElementById("chart-choice").checked = false;
+				
+			} else if (name == "10_Min") {
+				
+				refreshRate = "600";
+				
+				document.getElementById("none-choice").checked = false;
+				document.getElementById("30sec-choice").checked = false;
+				document.getElementById("1mins-choice").checked = false;	
+				document.getElementById("10mins-choice").checked = true;
+				document.getElementById("chart-choice").checked = false;
+				
+			} else if (name == "chart") {
+				
+				//refreshRate = "chart";
+				doRefresh = true;
+				
+				document.getElementById("none-choice").checked = false;
+				document.getElementById("30sec-choice").checked = false;
+				document.getElementById("1mins-choice").checked = false;	
+				document.getElementById("10mins-choice").checked = false;
+				document.getElementById("chart-choice").checked = true;
+				
+			}
+		 console.log("Choice: ", name);      
+	    
+    }		
+				
+		
+
+		function displayPlot() {}
+
+		function displayTracks() {}
+
+
+
+		const createGeoJSON = () => {
+			var propertyName;
+			var i;
+			var data;
+
+			// data[i][document.getElementById("propertyname2").value] = document.getElementById("propertyvalue2").value;
+			const dataGeoJSON = GeoJSON.parse(data, {
+				Point: ["lat", "lng"]
+			});
+			document.getElementById("output").value = JSON.stringify(dataGeoJSON, null, 4);
+		};
+		// createGeoJSON();
+
+		//+------------------------------------------------------------------------------------------------------------------------------------ 
+		// Read CSV file to fetch sensor metadata (Thingspeak channels, API key, etc.)
+		//+------------------------------------------------------------------------------------------------------------------------------------ 
+	function getCSVConfig(url) {
+            var url;
+			//var url = sensorURL; // server-based CSV file containing sensors, thingSpeak channel info, data, locations, etc. ..AQView-sensors.csv
+			var request = new XMLHttpRequest();
+			console.log("Loading " + url);
+			request.open("GET", url, false);
+			request.send(null);
+			 if (request.status != 200) { // analyze HTTP status of the response
+               alert("Community map" +url+ " not found."); // e.g. 404: File Not Found
+               return;
+               }
+			// get and parse data for sensor map
+			var jsonObject = request.responseText.split(/\r?\n|\r/);
+			console.log(jsonObject);
+			//console.log("len: " + jsonObject.length);
+		  try	
+		  {
+			for (var i = 1; i < jsonObject.length - 1; i++) {
+				markers.push(jsonObject[i].split(','));
+				//console.log("Markers: " + i + markers[i]);
+			}
+		  }
+		  catch(err)
+		  {
+			console.log("Error reading the CSV sensor file.");
+		  }
+		  
+		   
+			// NOW, get metadata for track and charts functions
+			// put ThingSpeak Channel#, Channel Name, and API keys here.
+			// fieldList shows which field you want to load, and which axis to display that field on, 
+			// the 'T' Temperature left axis, or the 'O' Other right axis.
+
+			var channelNum;
+			var channelKey; // ex: api_key=DZ07N6EQQM0GEUPE
+			var equals;
+			var cKey;
+			var bpList = [];
+			trackDevice = []; trackChannel = []; trackKey = []; // reset device arrays
+			trackLat = []; trackLon = []; trackLocation = []; trackTags = [];
+
+			for (ii = 0; ii < jsonObject.length - 2; ii++) {
+				if (markers[ii][2].indexOf("Vaisala") < 0) // omit Viasala for the time being
+				{
+				// first push "c" channel (tracks) device metadata
+					trackDevice.push(markers[ii][1]);// device name
+					trackChannel.push(markers[ii][8]); // Channel C #
+					trackLocation.push(markers[ii][3]); // Location (eg, "Silver Creek")
+					trackTags.push(saveTags[ii]);
+				  //console.log("Track Location: " + trackLocation[ii]);
+					trackKey.push(markers[ii][9]); // Channel C Key
+					trackLat.push(markers[ii][4]);
+					trackLon.push(markers[ii][5]);			
+					
+				  //var bpList = ["YAQA-1","YAQA-2","YAQA-4","YAQA-34"];     
+
+                    bpList.push(markers[ii][1]);// push "trackDevice" device name
+		
+				// next, push "a" channel device metadata
+					channelNum = markers[ii][6]; //console.log(i + " channelNum: " + channelNum);
+					channelKey = markers[ii][7]; //console.log("I: " + i + "Channelkey: " + channelKey);
+				
+					channelKeys.push({
+						channelNumber: channelNum,
+						name: markers[ii][1],
+						key: channelKey,
+						//fieldList:[{field:1,axis:'O'},{field:2,axis:'O'},{field:3,axis:'O'},{field:4,axis:'O'},{field:5,axis:'O'},{field:6,axis:'T'},{field:7,axis:'H'},{field:8,axis:'O'}]});
+						//}
+						fieldList: [{
+							field: 1,
+							axis: 'O'// "O" means "opposite side"
+						}, {
+							field: 2,
+							axis: 'O'
+						}, {
+							field: 3,
+							axis: 'O'
+						}, {
+							field: 4,
+							axis: 'O'
+						}, {
+							field: 5,
+							axis: 'O'
+						}, {
+							field: 8,
+							axis: 'O'
+						}]
+					});
+				} else {}
+				
+				console.log("ChannelKeys - " + channelKeys);
+				
+				// omit lat, lon fields
+				// Retrived data from csv file content
+			}
+			 // set up BackpAQ device list
+			        var sel = document.getElementById('deviceList');
+                    for(var i = 0; i < bpList.length; i++) {
+                        var opt = document.createElement('option');
+                        opt.innerHTML = bpList[i];
+                        opt.value = bpList[i];
+                        sel.appendChild(opt);       
+                    }	
+			
+		}
+function getCSVConfig1() {
+
+			var url = sensorURL; // server-based CSV file containing sensors, thingSpeak channel info, data, locations, etc. ..AQView-sensors.csv
+			var request = new XMLHttpRequest();
+			
+			request.open("GET", url, false);
+			request.send(null);
+			// get and parse data for sensor map
+			var jsonObject = request.responseText.split(/\r?\n|\r/);
+			console.log(jsonObject);
+			
+		 try {
+			//console.log("len: " + jsonObject.length);
+			for (var i = 1; i < jsonObject.length - 1; i++) {
+				markers.push(jsonObject[i].split(','));
+				
+			}
+
+			// NOW, get metadata for track data
+
+			for (i = 0; i < jsonObject.length - 2; i++) {
+				if (markers[i][2].indexOf("Vaisala") < 0) // omit Viasala for the time being
+				{
+				  // push "c" channel (tracks) device data
+					trackDevice.push(markers[i][1]);// device name
+					trackChannel.push(markers[i][8]); // Channel C #
+					trackKey.push(markers[i][9]); // Channel C Key
+					
+				} else {}
+				// omit lat, lon fields
+				// Retrived data from csv file content
+			}
+		 }
+		  catch(err)
+		  {
+			console.log("Error reading metadata file.");
+		  }
+		}
+		// Read and parse CSV file to fetch BAAQMD stations
+		function displayBAAQMDStations() {
+
+			parseData(BAQurl, displayBAAQMD);
+
+		}
+	
+
+		function isEmpty(obj) {
+			return !(() => {
+				for (const i in obj) {
+					return true;
+				}
+				return false;
+			})();
+		}
+
+		function getBoundsFromLatLng(lat, lng, radiusInKm) {
+			var lat_change = radiusInKm / 111.2;
+			var lon_change = Math.abs(Math.cos(lat * (Math.PI / 180)));
+			var bounds = {
+				lat_min: lat - lat_change,
+				lon_min: lng - lon_change,
+				lat_max: lat + lat_change,
+				lon_max: lng + lon_change
+			};
+			return bounds;
+		}
+		// Parse station CSV file
+		function parseData(url, callBack) {
+			Papa.parse(url, {
+				download: true,
+				header: true,
+				dynamicTyping: true,
+				complete: function(results) {
+					callBack(results.data);
+				}
+			});
+		}
+		
+// Edit sensor search tags ...Not working yet..		
+ function editTags(iSensor)
+ {
+							
+//	Fetch stored params for this sensor
+
+    var   iChan = channelKeys[iSensor].channelNumber;
+    var   iKey  = channelKeys[iSensor].key;
+    var   sensorName = channelKeys[iSensor].name;
+	
+	//var tagName = document.getElementById('address').value;
+	
+	let tags;
+	
+	let tagString = prompt("Enter tag(s) separated by space", saveTags[iSensor]);
+	console.log("iSensor, tags: " + iSensor + ", " + tagString);
+	
+	tags = "<b>Tags: " +  tagString + "</b>";
+	  
+	document.getElementById('demo').innerHTML = tags;
+	
+	saveTags.push(tagString);
+	trackTags.push(saveTags);
+	console.log("SaveTags: " + saveTags);
+	
+	//	searchTag: markers[i][10]
+	//	searchName: markers[i][10]
+	
+	//markers[iSensor][10] =
+	//markers[iSensor][11] = 
+		
+ }
+ 
+ function downloadCSV(iSensor)
+{
+	var start = "2021-11-01%2009:00:00";
+	var end = "2024-12-31%2009:00:00";
+					
+//	Fetch stored params for this sensor
+
+    var   iChan = channelKeys[iSensor].channelNumber;
+    var   iKey  = channelKeys[iSensor].key;
+    var sensorName = channelKeys[iSensor].name;
+    var tsFeeds1 = '/feeds.json?api_key=';
+	var timez =  '&timezone=America/Los_Angeles';
+	//var timez =    '&timezone=America/Juneau';
+	var extras = '&status=true&location=true&elevation=true';
+	var date = new Date().toISOString().slice(0, -5); // slice off milliseconds
+	var csvFile = "";
+
+   $.getJSON("https://api.thingspeak.com/channels/" + iChan + tsFeeds1 + iKey + extras + timez + "start=" + start + "end=" + end, function(result) {
+	
+    var jss = JSON.stringify(result.feeds);
+  
+	dataLength = result.feeds.length;
+	for (var counter = 0; counter < dataLength; counter++) {
+		
+		//timeDate = parseInt(result.feeds[counter].created_at);
+
+		//var time = (new Date(result.feeds[counter].created_at)).getTime();
+		
+      //  var localDate = new Date(result.feeds[counter].created_at);
+		var localString = new Date(result.feeds[counter].created_at).toLocaleString();
+		
+		var sss  = localString.replace(","," ");
+				
+		
+	//	console.log("New Local Date: " + jss);
+		
+	}	
+	  
+    csvFile += sensorName + "_" + date + ".csv"; // build file name	
+ 
+    var csv = Papa.unparse(
+		    result.feeds
+		  );
+	
+	var formatted = JSON.stringify(csv, null, 2);
+	
+	//console.log(formatted);
+
+	// substitute proper BackpAQ names for ThingSpeak field names    
+		var mapObj = {
+		created_at: "Created_at",
+		entry_id:   "Sensor ID",
+		field1: "PM1.0 (ug/m3)",
+		field2: "PM2.5 (ug/m3)",
+		field3: "PM10 (ug/m3)",
+		field4: "Temperature (deg F)",
+		field5: "Humidity (%)",
+		field6: "Latitude (deg)",
+		field7: "Longitude (deg)",
+		field8: "CO2 (ppm)",
+		latitude: "SPL (dBC)",
+		longitude:"SPL (dBZ)",
+		elevation: "SPL (dBA)",
+		status: "Spectrum (dBA)"
+			};
+			
+	var Data2 = formatted.replace(/created_at|entry_id|field1|field2|field3|field4|field5|field6|field7|field8|latitude|longitude|elevation|status/gi, function(matched) {
+	return mapObj[matched];
+	});
+		
+
+	const csv2 = JSON.parse(Data2);
+	//console.log(csv2);
+	//console.log(result.feeds.Created_at);
+	
+	
+    var csvData = new Blob([csv2], {type: 'text/csv;charset=utf-8;'});
+    var csvURL =  null;
+    if (navigator.msSaveBlob)
+    {
+        csvURL = navigator.msSaveBlob(csvData, csvFile);
+    }
+    else
+    {
+        csvURL = window.URL.createObjectURL(csvData);
+    }
+
+    var tempLink = document.createElement('a');
+    tempLink.href = csvURL;
+    tempLink.setAttribute('download', csvFile);
+    tempLink.click();
+	}) // getJSON
+}
+
+ function downloadTrackCSV()
+{
+									
+	$.getJSON('https://api.thingspeak.com/channels/' + bpChannel + '/feed.json?api_key=' + bpKey + '&start=' + startTrackDate + '&end=' + endTrackDate +
+					'&status=true&location=true&elevation=true&metadata=true&results=2000&timezone=America%2FLos_Angeles', function(data) {						
+	// NOTE: timezone adjusted for DST + 1 HOUR				
+	//$.getJSON('https://api.thingspeak.com/channels/' + bpChannel + '/feed.json?api_key=' + bpKey + '&start=' + startTrackDate + '&end=' + endTrackDate +
+	//				'&status=true&location=true&elevation=true&metadata=true&results=2000&timezone=America/Juneau', function(data) {									 
+	
+	
+	//var date = new Date().toISOString().slice(0, -5); // slice off milliseconds
+	var csvFile = "";
+	if (trackNameCurrent == '' | trackNameCurrent == null) {
+		trackNameCurrent = "My_Track";
+	}
+	
+	var startDateShort = startTrackDate.toString().slice(0, -32);   // ...slice off time zone stuff
+
+	csvFile += trackNameCurrent + "_" + startDateShort + ".csv"; // build file name.	
+ 
+    var csv = Papa.unparse(
+		    data.feeds
+		  );
+	
+	var formatted = JSON.stringify(csv, null, 2);
+
+	// substitute proper BackpAQ names for ThingSpeak field names    
+		var mapObj = {
+		created_at: "Created_at",
+		entry_id:   "Sensor ID",
+		field1: "User",
+		field2: "Latitude (Deg)",
+		field3: "Longitude (Deg)",
+		field4: "PM2.5 (ug/m3)",
+		field5: "Trackname",
+		field6: "iconURL",
+		field7: "CO2 (ppm)",
+		field8: "Comments",
+		latitude: "SPL (dBA)",
+		longitude:"SPL (dBC)",
+		elevation: "SPL (dBZ)",
+		status: "Spectrum (dBA)"
+			};
+			
+	var Data2 = formatted.replace(/created_at|entry_id|field1|field2|field3|field4|field5|field6|field7|field8|latitude|longitude|elevation|status/gi, function(matched) {
+	return mapObj[matched];
+	});	
+
+	const csv2 = JSON.parse(Data2); console.log(csv2);
+	
+    var csvData = new Blob([csv2], {type: 'text/csv;charset=utf-8;'});
+    var csvURL =  null;
+    if (navigator.msSaveBlob)
+    {
+        csvURL = navigator.msSaveBlob(csvData, csvFile);
+    }
+    else
+    {
+        csvURL = window.URL.createObjectURL(csvData);
+    }
+
+    var tempLink = document.createElement('a');
+    tempLink.href = csvURL;
+    tempLink.setAttribute('download', csvFile);
+    tempLink.click();
+	
+  }) // get JSON
+	
+}
+
+function downloadTrackDDCSV() {
+
+	var csvFile = "";
+	if (trackNameCurrent == '' | trackNameCurrent == null) {
+		trackNameCurrent = "My_Track";
+	}
+	var startDatex = new Date();
+	//var startDateShort = startDate.toString().slice(0, -32);   // ...slice off time zone stuff
+
+	csvFile += trackNameCurrent + "_" + startDatex + ".csv"; // build file name.
+	
+   console.log("trackJSON: " + trackJSON);
+  
+   // parse JSON into CSV
+    var csv = Papa.unparse(
+		    trackJSON
+        
+		  );
+	
+	console.log("CSV: " + csv);
+	
+    var csvData = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+    var csvURL =  null;
+    if (navigator.msSaveBlob)
+    {
+        csvURL = navigator.msSaveBlob(csvData, csvFile);
+    }
+    else
+    {
+        csvURL = window.URL.createObjectURL(csvData);
+    }
+
+    var tempLink = document.createElement('a');
+    tempLink.href = csvURL;
+    tempLink.setAttribute('download', csvFile);
+    tempLink.click();
+	
+}
+
+		// Adds a marker to the map and push to the array.
+function addMarker(position) {
+			const marker = new google.maps.Marker({
+				position,
+				map,
+			});
+			BAQMarkers.push(marker);
+		}
+
+		// Sets the map on all markers in the array.
+		function setMapOnAll(map) {
+			for (let i = 0; i < BAQMarkers.length; i++) {
+				BAQMarkers[i].setMap(map);
+			}
+		}
+
+		// Removes the markers from the map, but keeps them in the array.
+		function hideMarkers() {
+			setMapOnAll(null);
+		}
+
+		/*  <div id="loading">
+		       <img id="loading-image" src="https://www.backpaqlabs.com/images/bploading.gif" alt="Loading..." />             
+		   </div> */
+
+
+		// Shows any markers currently in the array.
+		function showMarkers() {
+			setMapOnAll(map);
+		}
+
+		// Deletes all markers in the array by removing references to them.
+		function deleteMarkers() {
+			hideMarkers();
+			BAQMarkers = [];
+		}
+		
+      // Caution: very sensor dependent at present
+		function getSensorData(iSensor) {
+
+			var iChan = 6,	iKey = 7;
+			var timez = '&timezone=America/Los_Angeles';
+			
+			// get noise and other data 
+			$.getJSON("https://api.thingspeak.com/channels/" + markers[iSensor][iChan] + tsFeeds2 +  markers[iSensor][iKey] + timez + tsAvg, function(result) {
+
+				// load sensor data arrays -- NOTE way too clever use of ThingSpeak "Location" fields to pass sound values
+				for (ll = 0; ll < result.feeds.length; ll++) {
+
+				  try {
+					pm25[iSensor] = parseFloat(result.feeds[iSensor].field2); // fetch PM2.5
+					CO2[iSensor] = parseFloat(result.feeds[iSensor].field8); // fetch CO2
+					rHumid[iSensor] = parseFloat(result.feeds[iSensor].field5); // fetch relative humidity
+
+					noiseDBA[ll] = parseFloat(result.feeds[ll].elevation);
+				//	console.log(ll + " DBA: " + noiseDBA[ll]);
+					noiseDBC[ll] = parseFloat(result.feeds[ll].latitude);
+				//	console.log(ll + " DBC: " + noiseDBC[ll]);
+					noiseDBZ[ll] = parseFloat(result.feeds[ll].longitude);
+				//	console.log(ll + " DBZ: " + noiseDBZ[ll]);
+					noiseSpectrumA[ll] = JSON.stringify(result.feeds[ll].status);
+				//	console.log(ll + " Spectrum: " + noiseSpectrumA[ll]);
+				  }
+				  catch(err)
+				   {
+					console.log("Error reading sensor data file.");
+				   }
+				}
+			}) // getJSON      			         
+		}
+       
+
+       function toggle_Fires_New() {
+       
+           activeFiresLayer.setMap(activeFiresLayer.getMap()==null?map:null);
+        }
+        
+	//------------------------------------------------------------xxxxxxxxxxxxxxxxxxxxxxxxxx---------------------------------------------------------------------------------------
+	// start the whole enchilada...callback from GoogleMaps API load     INITIALIZE
+	//------------------------------------------------------------xxxxxxxxxxxxxxxxxxxxxxxxxx---------------------------------------------------------------------------------
+	function initialize() {
+    console.log("Initializing map...");
+
+    var bounds = new google.maps.LatLngBounds();
+    var centerOfUS = { lat: 39.833, lng: -98.58 };
+    var mapOptions = {
+        center: centerOfUS,
+        zoom: 7,
+        panControl: false,
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        
+        zoomControl: true,
+        zoomControlOptions: {
+           position: google.maps.ControlPosition.RIGHT_CENTER,
+        },
+    };
+
+    // Display the map on the page
+    map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+    map.setTilt(45);
+
+    // Diagnostic log to confirm settings
+    google.maps.event.addListenerOnce(map, 'idle', function() {
+       // console.log("Map loaded with zoom:", map.getZoom());
+       // console.log("Map center:", map.getCenter().toString());
+        map.setZoom(5);
+    });
+
+            
+    setupDragAndDrop();
+          
+			// *** ------------------------------  set data layers   ----------------------------------------- ***
+			
+
+			// heatmap layer for current track data 
+
+			heatmap = new google.maps.visualization.HeatmapLayer({
+				data: heatMapData1,
+				dissapating: true,
+				radius: 40
+			});
+			
+			// document
+            //  .getElementById("toggle-heatmap")
+             //  .addEventListener("click", toggleHeatmap);
+			
+			fireLayer(); // init wildfie layer
+
+			trafficLayer = new google.maps.TrafficLayer(); // traffic data
+			
+
+			// Begin placing markers on main map
+
+			//initEvents(); // set up for drag and drop of track files (.geojson
+
+			// get a new date (local machine date time)
+			var date = new Date();
+			// get the date as a string
+			var n = date.toDateString();
+			// get the time as a string
+			var time = date.toLocaleTimeString();
+
+			// find the html element with the id of time
+			// set the innerHTML of that element to the date a space the time
+			document.getElementById('time').innerHTML = n + ' ' + time;
+
+			// Display multiple markers on a map
+			var infoWindow = new google.maps.InfoWindow(),
+				marker, i;
+			infowindow7 = new google.maps.InfoWindow();
+
+			// get some marker icons...  these are larger icons (64x64)
+			var bf_image = 'https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png';
+			var g_image = 'http://maps.google.com/mapfiles/kml/paddle/grn-circle.png';
+			var bl_image = 'http://maps.google.com/mapfiles/kml/paddle/blu-circle.png';
+			var r_image = 'http://maps.google.com/mapfiles/kml/paddle/red-circle.png';
+			var yel_image = 'http://maps.google.com/mapfiles/kml/paddle/ylw-circle.png';
+			var pur_image = 'http://maps.google.com/mapfiles/kml/paddle/purple-circle.png';
+			var orange_image = 'http://maps.google.com/mapfiles/kml/paddle/orange-circle.png';
+			//const backpackImage = "https://www.backpaqlabs.com/images/backpack1.png";
+			//const backpackImage = "https://www.backpaqlabs.com/images/backpack_new.png"; // new backpaq icon!
+			const backpackImage = "https://www.backpaqlabs.com/images/backpack-2.png"; // newest color backpaq icon!
+			const purpleAir1Image = "https://www.backpaqlabs.com/images/PA1.png";
+			const vaisala1Image = "https://www.backpaqlabs.com/images/Vaisala1.png";
+			const clarityImage = "https://www.backpaqlabs.com/images/clarity_logo.png";
+			const windSpeedImage = "https://www.backpaqlabs.com/images/wind-speed.png";
+			const windGaugeImage = "https://www.backpaqlabs.com/images/WindGauge.png";
+			const windGauge1Image = "https://www.backpaqlabs.com/images/windGauge1.png";
+			const CO2GaugeImage = "https://www.backpaqlabs.com/images/Co2Gauge.png";
+
+			var winContent;
+
+			// get today's date & time
+			let today = new Date().toISOString().slice(0, -5); // slice off milliseconds
+			var diff = -30; // collect data from last 30 minutes
+			var startDateObj = new Date();
+			var Obj = new Date(startDateObj.getTime() + diff * 60000).toISOString().slice(0, -5); // format for Beacon API
+			var circle;
+			var markerType = "";
+			var position;
+
+			// This is the big loop to display all PM sensors       
+			// Loop through our array of markers & place each one on the map according to LAN/LON position
+			//   1 - from config file as they are fixed sensors
+			//   2 - from first recorded position if mobile
+
+			for (i = 0; i < markers.length; i++) { // loop through all sensors/locations and place markers
+				
+												   					
+		
+				 position = new google.maps.LatLng(markers[i][4], markers[i][5]);
+				
+				var pmval = 10; // temp value 
+				//  var pmval = pm25[i][2];  // use US AQI standard (modified per https://airnow.gov/index.cfm?action=aqibasics.aqi)
+				if (pmval > 350) {
+					// build "dot"           
+					circle = {
+						path: google.maps.SymbolPath.CIRCLE,
+						fillColor: 'maroon', // maroon
+						fillOpacity: 0.4,
+						scale: 9.0,
+						strokeColor: 'white',
+						strokeWeight: 1
+					};
+
+				} else if (pmval > 250) {
+
+					circle = {
+						path: google.maps.SymbolPath.CIRCLE,
+						fillColor: 'maroon', // maroon
+						fillOpacity: 0.4,
+						scale: 9.0,
+						strokeColor: 'white',
+						strokeWeight: 1
+					};
+
+				} else if (pmval > 150) {
+
+					circle = {
+						path: google.maps.SymbolPath.CIRCLE,
+						fillColor: 'purple', // purple
+						fillOpacity: 0.4,
+						scale: 9.0,
+						strokeColor: 'white',
+						strokeWeight: 1
+					};
+
+				} else if (pmval > 65) {
+
+					circle = {
+						path: google.maps.SymbolPath.CIRCLE,
+						fillColor: 'red', // red
+						fillOpacity: 0.4,
+						scale: 9.0,
+						strokeColor: 'white',
+						strokeWeight: 1
+					};
+
+				} else if (pmval > 40) {
+
+					circle = {
+						path: google.maps.SymbolPath.CIRCLE,
+						fillColor: 'orange', // orange
+						fillOpacity: 0.4,
+						scale: 9.0,
+						strokeColor: 'white',
+						strokeWeight: 1
+					};
+
+				} else if (pmval > 15.5) {
+
+					circle = {
+						path: google.maps.SymbolPath.CIRCLE,
+						fillColor: 'yellow', // yellow
+						fillOpacity: 0.4,
+						scale: 9.0,
+						strokeColor: 'white',
+						strokeWeight: 1
+					};
+				} else {
+					circle = {
+						path: google.maps.SymbolPath.CIRCLE,
+						fillColor: '#00FF33', // green
+						fillOpacity: 0.4,
+						scale: 10.0,
+						strokeColor: 'darkgreen',
+						strokeWeight: 1
+					};
+				}
+				bounds.extend(position);
+
+				marker = new google.maps.Marker({
+						position: position,
+						draggable: true,
+						searchTag: markers[i][3],
+						searchName: markers[i][3],
+
+						label: {
+							text: markers[i][1],
+							color: "#4682B4",
+							fontSize: "15px",
+							fontWeight: "bold"
+						},
+						// set marker color
+
+						// set icon for BackpAQ, Purple Air, Met, Clarity or Vaisala sensors
+						// First check for no data received from either PM or Wind sensors...
+						icon: {
+
+							labelOrigin: new google.maps.Point(65, 15),
+
+							url: (function() {
+								if (markers[i][1] == "") { // if no data received ....
+									alert("No data!");
+									return circle; // set circle markers
+								} else if (markers[i][2].indexOf("BackpAQ") >= 0) { // check for BackpAQ sensors
+									markerType = "BackpAQ";
+									return backpackImage; // set BackpAQ markers
+								} else if (markers[i][2].indexOf("Met") >= 0) { // check for Met sensors
+									markerType = "Met";
+									return windGaugeImage; // set wind markers
+								} else if (markers[i][2].indexOf("Vaisala") >= 0) { // if Vaisala
+									markerType = "Vaisala";
+									return vaisala1Image; // Vaisala sensor
+								} else if (markers[i][2].indexOf("Clarity") >= 0) { // if Clarity
+									markerType = "Clarity";
+									return clarityImage; // Clarity sensor	
+								} else {
+									markerType = "PA";
+									return purpleAir1Image; // set Purple Air marker
+								}
+
+							})()
+						},
+
+						animation: google.maps.Animation.DROP,
+
+						map: map,
+
+						title: markers[i][1] + "  at " + markers[i][3]
+
+					}), // marker
+				
+				
+					console.log("channel # " + markers[i][7]);
+                 
+
+				// Allow each marker to have an info window    
+				google.maps.event.addListener(marker, 'click', (function(marker, i) {
+					return function() {
+
+						tsAvg = '&average=' + pmAverage;
+
+						if (pmAverage == 'realtime') {
+							tsAvg = "";
+						}
+
+						if (markers[i][2].indexOf("PurpleAir") >= 0) {
+							$.getJSON("https://api.thingspeak.com/channels/" + markers[i][6] + tsFeeds1 + markers[i][7] + tsAvg, function(result) {
+
+									pm25[i] = parseFloat(result.feeds[i].field2); // fetch PM2.5
+									rHumid[i] = parseFloat(result.feeds[i].field7); // fetch relative humidity
+
+									AQI = aqiFromPM(pm25[i]);
+									var AQIDescription = getAQIDescription(AQI); //A short description of the provided AQI             
+									var AQIMessage = getAQIMessage(AQI); // What the provided AQI means (a longer description)
+
+								}) // getJSON
+								.fail(function() {
+									alert('getJSON request failed! ');
+								})
+						} else if (markers[i][2].indexOf("BackpAQ") >= 0) {
+							
+								
+				           // prepareSyncFrame(sensorURL, markers[i][1]);
+				           currentDeviceName2 = markers[i][1];
+						
+							// alert("Channel: " + markers[i][7]);
+						//	var tsFeeds2 = '/last.json?status=true&metadata=true&location=true&elevation=true&api_key=';
+							var timezz = '&timezone=America/Los_Angeles';
+									
+							
+							$.getJSON("https://api.thingspeak.com/channels/" + markers[i][6] + tsFeeds2 + markers[i][7] + tsAvg + timezz, function(result) {
+
+							// check for successful read from API..
+							
+									getSensorData(i); // get the sensor data for this ("i") channel (includes sound data)
+
+									try {
+                                           noise[i] = parseFloat(result.feeds[i].elevation); // fetch last noise entry
+                                        }
+                                     catch(err) {
+                                           console.log("Error reading track file");
+                                   }							
+									
+									// console.log("Noise[i]: " + noise[i]);
+									
+								//	pm25[i] = parseFloat(result.feeds[i].field2); // fetch PM2.5
+								//	co2[i] = parseFloat(result.feeds[i].field8); // fetch co2
+								//	rHumid[i] = parseFloat(result.feeds[i].field7); // fetch relative humidity
+
+									AQI = aqiFromPM(pm25[i]);
+								//	console.log("PM2.5: " + pm25[i]); console.log("CO2: " + co2[i]);
+									var AQIDescription = getAQIDescription(AQI); //A short description of the provided AQI             
+									var AQIMessage = getAQIMessage(AQI); // What the provided AQI means (a longer description)          
+
+								}) // getJSON
+
+								.then().fail(function() {
+									alert('getJSON request failed! ');
+								})
+
+						} else if (markers[i][2].indexOf("Vaisala") >= 0) {
+							var url = "https://beacon.vaisala.com/api/?d=P4930191&k=b23e8764490641dc9a85f5c32314ad66&t0=2019-04-01T00:00:00&t1=2019-05-01T00:05:01&c=5";
+							var request = new XMLHttpRequest();
+							request.open("GET", url, false);
+							request.send(null);
+
+							var parser = new DOMParser();
+							var xmlDoc = parser.parseFromString(request.responseText, "text/xml");
+
+							var NO2 = xmlDoc.getElementsByTagName("value")[0].childNodes[0].nodeValue;
+							var SO2 = xmlDoc.getElementsByTagName("value")[1].childNodes[0].nodeValue;
+							var CO = xmlDoc.getElementsByTagName("value")[2].childNodes[0].nodeValue;
+							var O3 = xmlDoc.getElementsByTagName("value")[3].childNodes[0].nodeValue;
+							var temp = xmlDoc.getElementsByTagName("value")[4].childNodes[0].nodeValue;
+							var timestamp = xmlDoc.getElementsByTagName("timestamp")[1].childNodes[0].nodeValue;
+							
+						} else if (markers[i][2].indexOf("Clarity") >= 0) { // **CLARITY**
+									
+							
+							getClarityData(i);
+							                
+							
+						} else if (markers[i][2].indexOf("Met") >= 0) // using the Tempest sensor
+
+						{
+							const options = {
+                                method: 'GET',
+                               headers: { accept: 'application/json' }
+                            };
+                            const device_id = '269401';
+                            const key = '82145b14-30de-4102-bd88-f9eedf41e93b';
+
+                            const end =   '1686030865'; // 24 hours
+                            const start = '1685944465';
+
+                             fetch('https://swd.weatherflow.com/swd/rest/observations/device/'+ device_id +'?time_start='+ start+ '&time_end='+ end +'&fo                             rmat=json&api_key='+ key, options)
+
+                               .then(response => response.json())
+                               .then(json => {
+                               // console.log(JSON.stringify(json));
+                               // Parsing the JSON object
+                               const deviceId = json.device_id;
+                               const observation = json.obs[0];
+                               const status = json.status;
+                               const summary = json.summary;
+                               var timestamp;
+
+                               // Loop thriugh opservation array
+   
+                               for (i = 0; i < observation.length; i++) {
+    	
+                                   timestamp = new Date(json.obs[i][0]*1000); // to milliseconds
+     
+                                   console.log(timestamp + "  Wind Average: ", json.obs[i][2]);
+                                   console.log(timestamp + "  Wind Gust: ", json.obs[i][3]);
+                                   console.log(timestamp + "  Wind Direction: ", json.obs[i][4]);
+                                   
+                                   windDirection[i] = json.obs[i][4]; // wind direction
+
+								   windSpeed[i]     = json.obs[i][2]; // wind speed
+                                }
+                             })
+                               .catch(error => {
+                                 console.log(error);
+                               });
+								
+							
+						}
+
+						if (markers[i][2].indexOf("PurpleAir") >= 0 || markers[i][2].indexOf("BackpAQ") >= 0) // fetch time of last data entry
+						{
+
+							$.getJSON("https://api.thingspeak.com/channels/" + markers[i][6] + j_endPhrase1 + j_endPhrase2 + markers[i][7], function(result) {
+
+									var me = result;
+									//console.log(me);
+
+									console.log("Time since last data entry: " + secondsToDhms(me.last_data_age));
+
+									pm25_nodata_time[i] = secondsToDhms(me.last_data_age);
+
+								}) // getJSON
+								.fail(function() {
+									alert('getJSON request failed! ');
+								})
+						} else if (markers[i][2].indexOf("Met") >= 0) // fetch last data entry time for Met sensor
+						{
+
+							$.getJSON("https://api.thingspeak.com/channels/746995/fields/2/last_data_age.json", function(result) {
+
+									var mee = result;
+									console.log("Time since last data entry: " + secondsToDhms(mee.last_data_age));
+									// alert(wind_nodata_time[i]);
+
+									wind_nodata_time[i] = secondsToDhms(mee.last_data_age);
+
+								}) // getJSON
+								.fail(function() {
+									alert('getJSON request failed! ');
+								})
+						}
+
+						// make corrections to data according to correction type 
+
+						if (pmCorrection == "(LRAPA)") { //  PM_Val_cf1 = 0.5 * PM_Val_cf1 -.68
+							pm25[i] = 0.5 * pm25[i] - 0.68;
+							//alert("L: " + pm25[i]);
+						} else if (pmCorrection == "(AQandU)") { // PM_Val_cf1 = 0.778 * PM_Val_cf1 + 2.65
+							pm25[i] = 0.778 * pm25[i] + 2.65;
+							//alert("A: " + pm25[i]);
+						} else if (pmCorrection == "(USEPA)") { // PM_Val_cf1 = 0.534 * PM_Val_cf1 - 0.0844 * RH + 5.604
+							pm25[i] = 0.534 * pm25[i] - 0.0844 * rHumid[i] + 5.604;
+							//alert("U: " + pm25[i]);
+						} else if (pmCorrection == "NONE") {
+							pmCorrection = "";
+						}
+
+						pmCorrection = '&nbsp;<font color="green">' + '<b>' + pmCorrection + '</b>' + '</font>';
+
+						// format & populate content for infowindow according to sensor type ; "i" is sensor index  
+						csc = "createNewSmallChart(" + i + ");";
+						hsc = "closeChart()";
+						cbc = "createMetChartB(" + i + ");"; // wind "barbs"
+						crc = "createMetChartR(" + i + ");"; // wind direction
+						cpc = "createSpectrumChart(" + i + ");"; // sound spectrum (frequency) chart
+						ccc = "renderChart()"; // Clarity 
+						gcd = "getClarityData(" + i + ");";
+					
+					    dwnl = "downloadCSV(" + i +");";	// CSV download sensor data
+						usp = "updateSensorPosition(" + i + ");";	// update mobile sensor position
+						edt = "editTags(" + i + ");"; // edit sensor tags
+						//tsc = "showHide();"; // launch trackview
+						tsc = "startSessions();";
+					
+		
+						var avgString = "";
+						if (pmAverage == "Daily") {
+							avgString = "Data Average: Daily";
+						} else if (pmAverage == "60") {             						
+							avgString = "Data Average: 1 Hour";
+						} else if (pmAverage == "10") {
+							avgString = "Data Average: 10 minutes";
+						} else if (pmAverage == "realtime") {
+							avgString = "Realtime Data"
+						}
+
+						//avgString = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="blue">' + '<b>' + avgString + '</b>' + '</font>';
+                        avgString = '<font color="blue">' + '<b>' + avgString + '</b>' + '</font>';      
+						
+						// round PM2.5, CO2 to 1 decimal places       t
+						var rounded = Math.round(pm25[i] * 10) / 10;
+						var fixedPM = rounded.toFixed(1);
+						rounded = Math.round(CO2[i] * 10) / 10;
+						var fixedCO2 = rounded.toFixed(1);
+
+						// Handle sound data   
+						var lastEntry = noiseDBA.length - 1;
+						console.log("Last Entry (Sounds)" + lastEntry);
+
+						if (typeof noiseDBA[lastEntry] !== 'undefined' && !isNaN(noiseDBA[lastEntry])) // make sure of legit values
+						{
+							noiseyA = Math.round(noiseDBA[lastEntry]) + " dB(A)"; // build noise entry
+							noiseyC = Math.round(noiseDBC[lastEntry]) + " dB(C)"; // build noise entry
+							noiseyZ = Math.round(noiseDBZ[lastEntry]) + " dB(Z)"; // build noise entry       
+
+						} else {
+							noiseyA = "";
+							noiseyC = "";
+							noiseyZ = ""
+						} // blank if no noise data */
+
+						if (markers[i][2].indexOf("PurpleAir") >= 0) {
+							winContent = '<div id="bodyContent" align="left" >' + "Sensor: " + "<b>" + markers[i][1] + "</b>" + " " + pmCorrection + "<br>" + avgString +
+								"<br><hr>" + "<b>" + "AQI:  " + "</b>" +
+								"<font color = 'green'>" + AQI + "</font>" + "<br>" + "<b>" + "PM2.5:  " + "</b>" + fixedPM + unitsPM + "<br>" + "<b>" +
+								"Data Source:  " + "</b>" +
+								markers[i][2] + "<br>" + "<b>" + "Last Data:  " + "</b>" + pm25_nodata_time[i] + "<hr>" + "<button id=showCh onclick=" + csc + ">Show Chart</button> <button id=hideCh onclick=" + hsc + ">Hide Chart</button>" +
+								"</div>";
+						
+						} else if (markers[i][2].indexOf("Clarity") >= 0) { // if we have a Clarity	
+						   			
+							if (!AQIMeas) {
+								AQI = "Not available";
+							}
+							
+							winContent = '<div id="bodyContent" align="left">' + 
+                              "Sensor: " + "<b>" + markers[i][1] + "</b>" + " " + pmCorrection + "<br>" + avgString +
+                              "<br><hr>" + 
+                              "<b>AQI:  </b>" +
+                              "<font color='green'>" + AQIMeas + "</font><br>" +
+                              "<b>PM2.5:  </b>" + pm25Meas + unitsPM + "<br>" +
+                              "<b>NO2:  </b>" + no2Meas + " ppb<br>" + 
+                              "<b>Data Source:  </b>" + markers[i][2] + "<br>" +
+                              "<b>Last Data:  </b>" + formattedDate + 
+                              "<hr>" +
+                            // Add the toggle dropdown for frequency selection here
+                              '<label for="frequencySelect">Select Data Frequency: </label>' +
+                              
+                                '<select id="frequencySelect">' +
+                                   '<option value="minute"' + (selectedFrequency === 'minute' ? ' selected' : '') + '>Minutes</option>' +
+                                   '<option value="hour"' + (selectedFrequency === 'hour' ? ' selected' : '') + '>Hours</option>' +
+                                '</select>' +
+                              "<br> <hr>" + 
+                             '<button id="showCh" onclick="' + ccc + '">Show Chart</button> ' + 
+                             '<button id="hideCh" onclick="' + hsc + '">Hide Chart</button>' +
+                            '</div>';
+												
+								
+						} else if (markers[i][2].indexOf("BackpAQ") >= 0) { // if we have a BACKPAQ
+						
+							 // prepareSyncFrame(sensorURL, markers[i][1]); // if using iFrame method
+							
+							 pickDate(markers[i][1], markers[i][8], markers[i][9]); // fire up the new sessions UX to allow user to select session, passing Thingspeak channel "3" number and read key
+							
+							 
+						  // prepare sensor options box for BackpAQ 
+							winContent = '<div id="bodyContent" align="left" >' + "Sensor: " + "<b>" + markers[i][1] + "</b>" + " " + pmCorrection + "&nbsp;&nbsp;&nbsp;&nbsp;" + avgString  +
+								"<br><b>Location: </b>" + markers[i][3] + 
+								"<br><hr>" + "<b>" + "AQI:  " + "</b>" +
+								"<font color = 'green'>" + AQI + "</font>" + "<br>" + "<b>" + "PM2.5:  " + "</b>" + fixedPM + unitsPM + "<br>" +
+								"<b>" + "CO2: " + "</b>" + fixedCO2 + " ppm" + "<br>" + "<b>" + "Sound: " + "</b>" + noiseyA + " " + noiseyC + " " + noiseyZ + "<br>" +
+								"<b>" + "Data Source:  " + "</b>" +
+								markers[i][2] + "<br>" + "<b>" + "Last Data:  " + "</b>" + pm25_nodata_time[i] + "<hr>" +
+								"<button id=showCh onclick=" + csc + ">PM/CO2</button>"	+		
+								"<button id=showch onclick=" + usp  + ">Update Sensor Position</button>" + "<br>" + 
+								"<button id=showch onclick=" + dwnl + ">Download Data to CSV</button>" +
+								"<button id=showch onclick=" + edt + ">Add Tags</button>" + "<br>" +
+								
+								"<p id = " + 'demo' + "> </p>" + 
+								"</div>";		
+								
+						} else if (markers[i][2].indexOf("Vaisala") >= 0) {
+							winContent = '<div id="bodyContent" align="left" >' + "<b>" + markers[i][1] + "</b>" + "<br><br><hr>" + "<b>" + "Data:  " + "</b>" + "<br>" + "<b>" + "NO2: " + "</b>" + NO2 + unitsNO2 + "<br>" + "<b>" + "SO2: " +
+								"</b>" + SO2 + unitsNO2 + "<br>" + "<b>" + "CO: " + "</b>" + CO + unitsNO2 + "<br>" + "<b>" +
+								"Data Source:  " + "</b>" + markers[i][2] + " AQT400" + "<br>" + "<b>" + "Last Data:  " + "</b>" + timestamp + "<hr>" + "<button id=showCh onclick=" + csc + ">Show Chart</button>  <button id=hideCh onclick=" + hsc + ">Hide Chart</button>" +
+								"</div>";
+						} else if (markers[i][2].indexOf("Met") >= 0) {
+							winContent = '<div id="bodyContent" align="left" >' + "<b>" + "Sensor: " + markers[i][1] + "</b>" + "<br><br><hr>" + "<b>" + "Wind Speed:  " + "</b>" +
+								"<font color = 'green'>" + windSpeed[i] + "</font>" + " K" + "<br>" + "<b>" + "Wind Dir:  " + "</b>" + windDirection[i] + "deg T" + "<br>" + "<b>" +
+								"Data Source:  " + "</b>" +
+								markers[i][2] + "<br>" + "<b>" + "Last Data:  " + "</b>" + wind_nodata_time[i] + "<hr>" + "<button id=wb onclick=" + cbc + ">Wind Barb</button>" + "<button id=wr onclick=" + crc + ">Wind Rose</button>" +
+								"<button id=hideCh onclick=" + hsc + ">Hide Chart</button>" + "</div>";
+						}
+                         
+						 infoWindow.setContent(winContent); // load infowindow content
+						 infoWindow.open(map, marker); // load markers
+				         markerUpdate = marker;
+						 
+						 if (refreshRate == 0) { console.log("rr = 0");} //not doing a data refresh
+						 else
+				          {	
+						    console.log("rr = " + refreshRate);
+							setInterval(function() {
+                              google.maps.event.trigger(marker, 'click');
+                               }, refreshRate*1000);
+						     //   refreshHandle = setInterval(function() {
+		                     //   infoWindow.setContent(winContent); // reload infowindow content
+						     //   infoWindow.open(map, marker); // load markers
+							 //    markerUpdate = marker;
+					         // }	
+						  }
+						  
+					}; // addListener function...
+									
+				  
+				})(marker, i));
+				
+				
+				// Automatically center the map fitting all markers on the screen
+				map.fitBounds(bounds);
+
+				cl_markers.push(marker); // push all markers for cluster function below
+
+			} // Loop through marker array.... THE BIG LOOP!
+			
+			    // Simulate a click event ahead of user interaction
+               //  google.maps.event.trigger(marker, 'click');
+							
+			   
+			    google.maps.event.addListener(document.getElementById("info_map"), 'click', function() {
+				//  alert('close1');
+				document.getElementById("info_map").style.display = "none";
+				//  alert("click");
+				document.body.removeChild(document.getElementById("1278481"));
+			});
+			
+			
+			// construct, display marker clusters...
+
+			var options = {
+				imagePath: 'images/m',
+			//	gridSize:30,
+				minimumClusterSize: 2,
+				zoomOnClick: true,
+				maxZoom: 14 // was 14
+			};
+
+			var markerCluster = new MarkerClusterer(map, cl_markers, options);
+
+			google.maps.event.addListener(markerCluster, 'clusterclick', function(cluster) {
+
+				var markers = cluster.getMarkers();
+
+				var array = [];
+				var num = 0;
+
+				for (i = 0; i < markers.length; i++) {
+
+					num++;
+					array.push(markers[i].getTitle() + '<br>');
+				}
+				if (map.getZoom() <= markerCluster.getMaxZoom()) {
+					infoWindow.setContent('<div id="bodyContent" align="left" >' + "<b>" + markers.length + "</b>" + " <b>Sensors in this cluster</b><hr><br>" + array) + "</div>";
+					infoWindow.setPosition(cluster.getCenter());
+					infoWindow.open(map);
+					setTimeout (function () {infoWindow.close(); }, 2000); // close infowndow after 2 seconds	
+				} 
+			});
+			
+			// Override our map zoom level once our fitBounds function runs (Make sure it only runs once)
+			var boundsListener = google.maps.event.addListener((map), 'bounds_changed', function(event) {
+				this.setZoom(11); // to accomodate all markers
+	
+				google.maps.event.removeListener(boundsListener);
+		   });
+
+			// console.log("Finish init " + now());
+			
+	  //}						
+		
+	}	
+	
+	 var selectedFrequency = "minute";
+	
+	function getClarityData(iSensor) {
+                           
+	//my_api_read_key = markers[iSensor][7];
+	my_api_read_key = 'u7JGpnsQK9pM6XO52v5gxiP63j7EYUTw0nZzMsk5';
+    let my_org = 'acterrOUK5'; // Acterra acterrOUK5
+    let my_url = 'https://clarity-data-api.clarity.io/v2/recent-datasource-measurements-query';
+                            
+    let data_source_ids = markers[iSensor][6]; // Clarity datasource
+   // let data_source_ids = 'DLCXW2575,DUAAJ0684'; // Clarity datasource
+  
+    let dataMetric1 = 'no2Conc1HourMean';
+    let dataMetric2 = 'pm2_5ConcMass1HourMean';
+    var dataMetric3 = 'pm2_5ConcMassIndividual'; // <-- ug/m3
+    var dataMetric4 = 'no2ConcIndividual'; // <-- ppb
+    var dataMetric5 = 'pm2_5ConcMassNowcastUsEpaAqi'; // <--- AQI  can only use with "hour" outputFrequency
+                            
+    // Get selected frequency from the dropdown if the dropdown exists
+    const frequencySelect = document.getElementById('frequencySelect');
+    if (frequencySelect) {
+        // Update the selected frequency from the dropdown
+        selectedFrequency = frequencySelect.value;
+    } else {
+        console.warn('Frequency dropdown not found, using default:', selectedFrequency);
+    }
+    
+                            
+    // fetch data
+    fetch(my_url, {
+    method: "POST",
+    body: JSON.stringify({
+    "org": my_org,
+    "datasourceIds": [data_source_ids],
+    "outputFrequency": selectedFrequency // "minute" or "hour" based on user selection
+    }),
+    headers: {
+    "x-api-key": my_api_read_key,
+    "Content-type": "application/json; charset=UTF-8"
+    }
+    })
+    .then(response => response.json())
+    .then(results => {
+    	
+    console.log("Selected Freq: " + selectedFrequency);
+    	
+    if (selectedFrequency == "minute") {
+    // Process NO2 data
+    no2Measurements = results.data
+    .filter(data => data.metric === dataMetric4)
+    .map(data => [new Date(data.time).getTime(), data.value]);
+
+    // Process PM2.5 data
+    pm25Measurements = results.data
+    .filter(data => data.metric === dataMetric3)
+    .map(data => [new Date(data.time).getTime(), data.value]);
+                              
+    } else { // "hour"
+                              	
+     // Process NO2 data
+     no2Measurements = results.data
+     .filter(data => data.metric === dataMetric1)
+     .map(data => [new Date(data.time).getTime(), data.value]);
+
+     // Process PM2.5 data
+     pm25Measurements = results.data
+     .filter(data => data.metric === dataMetric2)
+     .map(data => [new Date(data.time).getTime(), data.value]);	
+                            
+     // Process AQI (PM2.5) data (Note: only valid if doing HOURLY measurements)
+     aqipm25Measurements = results.data
+     .filter(data => data.metric === dataMetric5)
+     .map(data => [new Date(data.time).getTime(), data.value]);
+     
+    }
+                            
+	const combinedPMMeas =  pm25Measurements[0]; // latest pm value + timestamp
+	const combinedNO2Meas = no2Measurements[0]; // latest NO2 value + timestamp
+	
+	// Ensure the PM data is a string before splitting
+    var dataString = combinedPMMeas.toString();  // Convert the data to a string
+                            
+	// Split the string by the comma
+    const [timestamp, value] = dataString.split(',');
+
+    // Convert the values into appropriate types
+    const timestampValue = parseInt(timestamp, 10);  // Convert to number (timestamp)
+    pm25Meas = parseFloat(value);                    // Convert to number (decimal)
+                             
+    // Ensure the NO2 data is a string before splitting
+    dataString = combinedNO2Meas.toString();  // Convert the data to a string
+                            
+	// Split the string by the comma
+    const [timestamp2, value2] = dataString.split(',');
+
+    // Convert the values into appropriate types
+    // const timestampValue = parseInt(timestamp, 10);  // Convert to number (timestamp)
+    no2Meas = parseFloat(value2); 
+    
+    if (selectedFrequency == "hour") {  
+      const combinedAQIMeas = aqipm25Measurements[0]; // latest AQI value + timestamp
+						    
+      // Ensure the AQI data is a string before splitting
+      dataString = combinedAQIMeas.toString();  // Convert the data to a string      
+      // Split the string by the comma
+      const [timestamp3, value3] = dataString.split(',');  
+      AQIMeas = parseFloat(value3);              
+                           
+    }
+    // Log the results
+    console.log('Timestamp:', timestampValue);
+    console.log('PM2.5:', pm25Meas);
+    console.log('NO2:', no2Meas);
+    console.log("AQI: " + AQIMeas);
+                           
+    // Convert the timestamp to a Date object
+    const date = new Date(timestampValue);
+
+    // Format the date to MM-DD-YYYY HH:MM:SS
+    formattedDate = `${
+    String(date.getMonth() + 1).padStart(2, '0')
+    }-${String(date.getDate()).padStart(2, '0')}-${
+       date.getFullYear()
+    } ${
+           String(date.getHours()).padStart(2, '0')
+    }:${String(date.getMinutes()).padStart(2, '0')
+    }:${String(date.getSeconds()).padStart(2, '0')}`;
+
+    // Output the formatted date
+         console.log('Formatted Date:', formattedDate);
+
+    // for graph, sort the data in ascending order
+    no2Measurements.sort((a, b) => a[0] - b[0]);
+    pm25Measurements.sort((a, b) => a[0] - b[0]);
+                            
+    // console.log("pm25Measurements: " + pm25Measurements);
+
+    })
+    .catch(error => {
+       console.error('Error fetching sensor data:', error);
+    });	
+	
+ }  
+	
+//var csv is the CSV file with headers
+function csvJSON(csv){
+ 
+  var lines=csv.split("\n");
+ 
+  var result = [];
+ 
+  var headers=lines[0].split(",");
+ 
+  for(var i=1;i<lines.length;i++){
+ 
+	  var obj = {};
+	  var currentline=lines[i].split(",");
+ 
+	  for(var j=0;j<headers.length;j++){
+		  obj[headers[j]] = currentline[j];
+	  }
+ 
+	  result.push(obj);
+ 
+  }
+  
+  //return result; //JavaScript object
+  return JSON.stringify(result); //JSON
+}
+
+    /* main upload function */
+    function upload(file) {
+    	
+    	if( file.type.match(/text\/csv/) || file.type.match(/vnd\.ms-excel/) ){
+        //if(file.type.match(/text\/csv/)){
+	    	oFReader = new FileReader();
+	        oFReader.onloadend = function() {
+
+	        	//console.log(csvJSON(this.result));
+
+	        	jsonSD = csvJSON(this.result);
+	        	console.log(jsonSD);
+	        	
+
+	        	//var blob = new Blob([jsonSD], {type: 'application/json'});
+	        	//var url1 = URL.createObjectURL(blob);
+	        	//output.innerHTML = '<a href="'+url1+'">JSON file</a>';
+
+	        };
+	        oFReader.readAsText(file);
+        } else {
+        	console.log("This file does not seem to be a CSV.");
+        }
+    }
+			
+	function wait(ms){
+       var start = new Date().getTime();
+       var end = start;
+       while(end < start + ms) {
+         end = new Date().getTime();
+       }
+    }
+		function secondsToDhms(seconds) {
+			seconds = Number(seconds);
+			var d = Math.floor(seconds / (3600 * 24));
+			var h = Math.floor(seconds % (3600 * 24) / 3600);
+			var m = Math.floor(seconds % 3600 / 60);
+			var s = Math.floor(seconds % 60);
+
+			var dDisplay = d > 0 ? d + (d == 1 ? " day, " : " days, ") : "";
+			var hDisplay = h > 0 ? h + (h == 1 ? " hour, " : " hours, ") : "";
+			var mDisplay = m > 0 ? m + (m == 1 ? " minute " : " minutes ") : "";
+			var sDisplay = s > 0 ? s + (s == 1 ? " second" : " seconds") : "";
+			//return dDisplay + hDisplay + mDisplay + sDisplay;
+			return dDisplay + hDisplay + mDisplay;
+		}
+
+		
+		// update mobile sensor position on map
+		function updateSensorPosition(i) {
+					
+					
+					   console.log("Chan: " + trackChannel[i]);
+					   console.log("Keyy: " + trackKey[i]);
+					
+					   
+					   field22 = '/feeds.json?results=2&api_key=';
+						
+					    $.getJSON("https://api.thingspeak.com/channels/" + trackChannel[i] + field22 + trackKey[i] , function(result) {
+				     //  $.getJSON("https://api.thingspeak.com/channels/1309328/feeds.json?results=2&key=" + "V0PEM036RAW2M9C9" , function(result) {
+					 
+					    dataLength = result.feeds.length;
+						console.log(result);
+						
+						if (dataLength > 0) // if  data...
+						  {
+				
+				            latInitial = parseFloat(result.feeds[0].field2); // fetch Lat from "C" Channel
+			  	            lonInitial = parseFloat(result.feeds[0].field3); // fetch Lon
+					
+					        console.log("LatI: " + latInitial);				
+					        console.log("lonI: " + lonInitial);
+							
+					        if (latInitial > 0)
+							{
+					          var positioni = new google.maps.LatLng(latInitial, lonInitial); /* set sensor icon at initial track position */
+						    //  marker.setPosition(positioni);
+							   markerUpdate.setPosition(positioni);
+							}
+						   }
+					     else {console.log("Error in mobile sensor position update.")}
+			          }); // getJSON  
+					
+        }
+
+//  search for sensors and center map		
+	function geocodeAddress(map) {
+    var devName = document.getElementById('address').value;
+	console.log(trackLocation);
+	
+    var dIndex = trackDevice.indexOf(devName.toUpperCase()); // try sensor
+	if (dIndex >= 0) {
+		bpDevice =trackDevice[dIndex]; // BackpAQ device name
+		
+	    var position = new google.maps.LatLng(trackLat[dIndex], trackLon[dIndex]);
+        map.setCenter(position);
+        map.setZoom(14);
+	} else  {
+		dIndex = trackLocation.indexOf(devName); // try location
+		console.log("dIndex= " + dIndex);
+	    if (dIndex >= 0) {
+		  bpDevice =trackLocation[dIndex]; // BackpAQ device name
+		  console.log("Found it: " + bpDevice);
+	      var position = new google.maps.LatLng(trackLat[dIndex], trackLon[dIndex]);
+          csv.setCenter(position);
+          map.setZoom(14);
+		 }  
+	    else {
+		  alert("Sensor " + '"'+devName+'"' + " not found...try again!");	
+	   }   
+	}
+ }
+ 
+ 
+ Highcharts.setOptions({
+    global: {
+        useUTC: false
+    }
+});
+
+function renderChart() {
+	
+  document.getElementById("graph-container").style.display = "inline";
+	
+	// set the allowed units for data grouping
+  var groupingUnits = [
+				   [
+					'week', // unit name
+					[1] // allowed multiples
+				   ],
+				   [
+					'month',
+					[1, 2, 3, 4, 6]
+				   ]
+                  ];
+	
+	
+    Highcharts.stockChart('graph-container', {
+        chart: {
+            type: 'line',
+            zoomType: 'x'
+        },
+        rangeSelector: {
+            selected: 1
+        },
+        title: {
+            text: 'Clarity Air Quality Measurements Over Time'
+        },
+        xAxis: {
+            type: 'datetime',
+            title: {
+                text: 'Date and Time'
+            }
+        },
+        yAxis: [{
+            labels: {
+                align: 'right',
+                x: -3
+            },
+            plotLines: [{
+	
+							value: 9,
+							color: '#52cc50',
+							width: 3,
+							dashStyle: 'longdashdot',
+                            zIndex : 3,
+							label: {
+								text: 'Good',
+								x: 0,
+								y: 15,
+								style: {
+                                    color: '#52cc50',
+                                    fontWeight: 'bold'
+                                }
+
+							}
+						}, {
+							
+							value: 35,
+							color: '#f0ea41',
+							width: 3,
+							dashStyle: 'longdashdot',
+                            zIndex : 3,
+							label: {
+								text: 'Moderate',
+								x: 0,
+								y: 15,
+								style: {
+                                    color: '#f0ea41',
+                                    fontWeight: 'bold'
+                                }
+
+							}
+						}, {
+							
+							value: 55,
+							color: '#f0b641',
+							width: 3,
+							dashStyle: 'longdashdot',
+                            zIndex : 3,
+							label: {
+								text: 'Unhealthy for Sensitive',
+								x: 0,
+								y: 15,
+								style: {
+                                    color: '#f0b641',
+                                    fontWeight: 'bold'
+                                }
+							}
+						}, {
+							
+							value: 125,
+							color: '#f04141',
+							width: 3,
+							dashStyle: 'longdashdot',
+                            zIndex : 3,
+							label: {
+								text: 'Unhealthy',
+								x: 0,
+								y: 15,
+								style: {
+                                    color: '#f04141',
+                                    fontWeight: 'bold'
+                                }
+
+							}
+						}, {
+						
+							value: 225,
+							color: '#7D2181',
+							width: 3,
+							dashStyle: 'longdashdot',
+                            zIndex : 3,
+							label: {
+								text: 'Very Unhealthy',
+								x: 0,
+								y: 15,
+								style: {
+                                    color: '#7D2181',
+                                    fontWeight: 'bold'
+                                }
+
+							}
+								
+						}],
+            title: {
+                text: 'PM2.5 (ug/m3)'
+            },
+            height: '60%',
+            lineWidth: 2,
+            resize: {
+                enabled: true
+            }
+        }, {
+            labels: {
+                align: 'right',
+                x: -3
+            },
+            title: {
+                text: 'NO2 (ppb)'
+            },
+            top: '65%',
+            height: '35%',
+            offset: 0,
+            lineWidth: 2
+        }],
+        tooltip: {
+            valueDecimals: 2,
+            xDateFormat: '%m-%d-%Y %H:%M:%S',
+        },
+        navigator: {
+            adaptToUpdatedData: false,
+            series: {
+                id: 'navigator',
+                data: pm25Measurements
+            }
+        },
+        series: [{
+            name: 'PM2.5 Concentration',
+            data: pm25Measurements,
+            dataGrouping: {
+		      units: groupingUnits
+	        },
+            yAxis: 0  // Assign to the first yAxis (upper axis)
+        }, {
+            name: 'NO2 Concentration',
+            data: no2Measurements,
+            dataGrouping: {
+		      units: groupingUnits
+	        },
+            yAxis: 1  // Assign to the second yAxis (lower axis)
+        }]
+    });
+}
+	
+	</script>
+	
+
+</head>
+
+<body >
+
+
+	<div id="map_wrapper">
+
+		<div id='time'>
+
+		</div>
+
+
+		<div id="map">
+
+
+			<div class="overlay"></div>
+          
+			<div id="container">
+                
+				<div id="map_canvas" class="mapping"> </div>
+					
+				<div id="sidebar" class="mdc-typography" style="width: 200px; height: auto; overflow-y: scroll;color:blue;">
+				<h6><p>ESUHSD has partnered with Sustainable Silicon Valley (SSV) to provide portable, low-cost 
+				<b>BackpAQ</b> air quality sensors which enable teachers to engage students in a hands-on curriculum designed to educate
+				 participants about pollution, enable them to build their own low-cost air sensors, and empower them to affect changes in their communities. 
+				</p></h6>
+					
+					<img src="https://www.backpaqlabs.com/images/NumberOneInCircle.png" width="30" height="30">
+					<h2><b>First, find your school/class...</b></h2>
+					<p></p>
+					
+					<div id="sensorFile">
+                      <b>YAQA Sensor Community:</b>
+                      <select id="mySelect" title="Select your school or class: ">   
+                       <option value="" selected>--Please select your school--</option>                 
+                      </select>
+                      <button id="confirmSelection">Confirm</button>
+                    </div>
+					
+		             
+		             
+				     <br>
+				     	<h2>Then, click on the blue, yellow or red dot on the map</h2>
+				     
+					<div id="line"><hr  style="" /></div>
+					
+					<img src="https://www.backpaqlabs.com/images/NumberTwoInCircle.png" width="30" height="30">
+					<h2><b>Next, click on the BackpAQ sensor you want to visualize...</b></h2>
+					
+					<div id="deviceNam" style="display: none">
+					
+						<select id="deviceList" title="Choose BackpAQ sensor" >  </select>
+					</div>
+					<br>
+					<!-- <img src="https://www.backpaqlabs.com/images/NumberThreeInCircle.png" width="30" height="30" > -->
+					<div style="display: block">
+						<label for="start">Choose session or <br> search new timeframe:</label>
+						<br>
+					<!---	 <input type="text" id="timeframe" title="Enter from and to dates or click to view calendar." name="daterange" value="01/01/2023 - 01/01/2024" /> -->
+					
+				    	<input type="text" name="daterange1" value="01/01/2024 - 12/01/2024" />
+                     
+                    <div id="line"><hr  style="" /></div>
+                     <p></p>
+                     
+                     
+			         <label class="form-switch" data-trigger="hover">
+				      <input type="checkbox" title="Click to display all active AQ sensors on multichart" onclick="startIt()" >
+				      <i></i>
+				      <font size="-1">Show Multi-Chart </font>
+			         </label><br>
+			         <!-- <label class="form-switch" data-trigger="hover">
+				      <input type="checkbox" title="Click to display Heatmap" id="toggle-heatmap" onclick="toggleHeatmap()" >
+				      <i></i>
+				      <font size="-1">Toggle Heatmap </font>
+			         </label><br>  -->
+			         
+                     <label class='form-switch' data-trigger="hover">
+                     <input type="checkbox"   title="Keep Markers" id="keepMarkersToggle" checked=''>
+                     <i></i> 
+                     <font size="-1">Keep Markers</font>
+			         </label>
+			         
+			         
+                      
+                    
+			         
+                   </div>
+                   
+                   <div id="chart-area">
+                    <button id="close-chart">Close</button>
+                    <div id="summary-container"></div> <!-- Summary container -->
+                    <div id="chart-container2"></div>
+                   </div>
+                   <div id="session-label">
+                     <p><b>Click on a session to view details and tracks</b></p>
+                   </div>
+                   <div id="session-container"></div>
+                  
+                   
+					<div id="chart-container" style="height: 600px ;display:none;"><br>
+						Highstock Chart Here<br>
+					</div>
+					<div id="below chart" style="display:none;">
+						<button style="width: 89px; margin-top: -18px;" value="Hide All"  name="Hide All Button"    onclick="HideAll();">Hide All</button>
+						<button style="width: 162px; margin-top: -18px;" value="Load More Data"name="Load More Data"  onclick="loadOneChannel();">Load More Historical Data </button>
+						<select id="Channel Select">
+						</select>
+						<select id="Loads">
+							<option value="1">1 Load</option>
+							<option value="2" selected="selected">2 Loads</option>
+							<option value="3">3 Loads</option>
+							<option value="4">4 Loads</option>
+							<option value="5">5 Loads</option>
+							<option value="10">10 Loads</option>
+							
+						</select>
+						<input id="Update" name="Update" type="checkbox"><span style="font-family: Lucida Grande;">Update
+						Chart</span> <span id="Latency" style="font-family: Lucida Grande;">(Latency)</span>
+					</div>
+					<div id="info_map" style="display:none;">
+						<button id=buttonClose onclick="closeIt();">x</button>
+					</div>
+					<div id="graph-container" style="display:none;">
+                         
+                          <button id="button">Destroy the chart</button>  
+					</div>
+				
+			</div>
+		</div>
+		<div id="floating-panel">
+
+			<h4>SSV AQView <img src="https://www.backpaqlabs.com/images/yaqalogo1-small.png" width="40" height="30"> Community Air Quality Sensor Map</h4>
+            <font size="-1"><b>Select Data Layers: </b></font> 
+			<label class="form-switch" data-trigger="hover">
+				<input type="checkbox" id="trafficToggle()" title="Click to display local traffic congestion" onclick="toggleGTraffic()" >
+				<i></i>
+				<font size="-1">Show Traffic Data </font>
+			</label> &nbsp;
+			<label class="form-switch" data-trigger="hover">
+				<input type="checkbox" title="Click to display regional air quality regulatory stations" onclick="displayBAAQMDStations()" >
+				<i></i>
+				<font size="-1">Show EPA Stations </font>
+			</label> &nbsp;
+			<label class="form-switch" data-trigger="hover">
+				<input type="checkbox" title="Click for Google Crowdsourced Data" onclick="toggleAQI()" >
+				<i></i>
+				<font size="-1">Show Google AQ Data</font>
+			</label> &nbsp;
+			<label class="form-switch" id="toggle" data-trigger="hover">
+				<input type="checkbox" title="Click to display active forest fires" onclick="toggle_Fires_New()" >
+				<i></i>
+				<font size="-1"> Show Fire Incident Data </font>
+			</label> &nbsp;
+			
+			
+			<br>
+			<font size="-1" color="green"><b>PM Correction Factor:</b>
+				<input type="radio" name="None" id="no-choice" onclick="selectCorrection(name)" checked="checked"><label>None</label>
+				<input type="radio" name="USEPA" id="USEPA-choice" onclick="selectCorrection(name)"><label> US EPA </label>
+				<input type="radio" name="LRAPA" id="LRAPA-choice" onclick="selectCorrection(name)"><label> LRAPA </label>
+				<input type="radio" name="AQandU" id="AQandU-choice" onclick="selectCorrection(name)"><label> AQandU</label> </font> 
+			&nbsp;&nbsp;&nbsp;&nbsp;<font size="-1" color="blue"><b>Data Averaging:</b>
+				<input type="radio" name="Realtime" id="realtime-choice" onclick="selectAverage(name)" checked="checked"><label>Realtime</label>
+				<input type="radio" name="10_Min" id="10min-choice" onclick="selectAverage(name)"><label>10 Min </label>
+				<input type="radio" name="1_Hr" id="1hr-choice" onclick="selectAverage(name)"><label>1 Hr</label>
+				<input type="radio" name="1_Day" id="1day-choice" onclick="selectAverage(name)"><label>1 Day</label> </font>	<br>
+			&nbsp;&nbsp;&nbsp;&nbsp;<font size="-1" color="red"><b>Data Refresh Period:</b>
+				<input type="radio" name="NoneR" id="none-choice" onclick="selectRefresh(name)" checked="checked"><label>None</label>
+				<input type="radio" name="30_sec" id="30sec-choice" onclick="selectRefresh(name)"><label>30 Seconds</label> 
+				<input type="radio" name="1_Min" id="1mins-choice" onclick="selectRefresh(name)"><label>1 Minute </label>	
+				<input type="radio" name="10_Min" id="10mins-choice" onclick="selectRefresh(name)"><label>10 Minutes</label>
+			    <input type="radio" name="chart" id="chart-choice" onclick="selectRefresh(name)"><label>Sensor Chart </label></font>
+						
+		</div>
+		
+		
+		
+		<div id="info-box" style="display:none;">
+			<button id=buttonCloseBox onclick="closeInfoBox();">x</button>
+			<h6>Track File Data</h6>
+			<hr>
+		</div>
+		<div id="BAQ-panel">
+			<input id="hide-markers" type="button" value="Hide Markers" />
+			<input id="show-markers" type="button" value="Show Markers" />
+			<input id="delete-markers" type="button" value="Delete Markers" />
+			
+			
+		</div>      
+        
+		<div id=screener></div>
+		
+<script>window.chatThingConfig = {"colour":{"widgetColour":"rgb(32, 151, 243)","widgetColourInverted":"rgb(17 24 39)"},"icon":{}};</script>
+<script src="https://chatthing.ai/chat-widget.js" type="text/javascript" id="4973c501-1849-45dc-9b86-5316bdb6f632" async defer></script>
+
+<script>// Ensure keepMarkers toggle logic is properly initialized and applied
+document.addEventListener('DOMContentLoaded', function() {
+    const toggle = document.getElementById('keepMarkersToggle');
+    if (toggle) {
+        toggle.addEventListener('change', function() {
+            keepMarkers = this.checked;
+            // Optionally, clear non-current session markers immediately upon toggle change
+            if (!keepMarkers) {
+                clearMarkers(true);
+            }
+        });
+    }
+});</script>
+		
+</body>
+
+</html>
